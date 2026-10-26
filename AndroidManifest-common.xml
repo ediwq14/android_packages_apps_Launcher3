@@ -61,7 +61,9 @@
     <uses-permission android:name="android.permission.GET_INTENT_SENDER_INTENT" />
     <uses-permission android:name="com.android.alarm.permission.SET_ALARM" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.DEVICE_POWER" />
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
 
     <!-- Floating window -->
     <uses-permission android:name="com.libremobileos.permission.START_FREEFORM" />
@@ -213,6 +215,12 @@
             android:theme="@style/HomeSettings.Theme"
             android:exported="true"
             android:autoRemoveFromRecents="true"  />
+        <activity
+            android:name="com.android.launcher3.settings.SettingsMisc"
+            android:label="@string/misc_category_title"
+            android:theme="@style/HomeSettings.Theme"
+            android:exported="true"
+            android:autoRemoveFromRecents="true" />
 
         <provider
             android:name="com.android.launcher3.testing.TestInformationProvider"
@@ -272,5 +280,10 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name="com.android.launcher3.lineage.trust.TrustAppsActivity"
+            android:label="@string/trust_apps_manager_name"
+            android:theme="@style/Theme.SubSettingsBase.Expressive"
+            android:autoRemoveFromRecents="true" />
     </application>
 </manifest>

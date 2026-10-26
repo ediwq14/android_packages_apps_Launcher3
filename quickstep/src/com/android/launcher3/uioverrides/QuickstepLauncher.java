@@ -23,7 +23,6 @@ import static android.view.accessibility.AccessibilityEvent.TYPE_VIEW_FOCUSED;
 
 import static com.android.app.animation.Interpolators.EMPHASIZED;
 import static com.android.internal.jank.Cuj.CUJ_LAUNCHER_LAUNCH_APP_PAIR_FROM_WORKSPACE;
-import static com.android.launcher3.Flags.blurOnMoreSurfaces;
 import static com.android.launcher3.Flags.enableUnfoldStateAnimation;
 import static com.android.launcher3.LauncherConstants.SavedInstanceKeys.PENDING_SPLIT_SELECT_INFO;
 import static com.android.launcher3.LauncherConstants.SavedInstanceKeys.RUNTIME_STATE;
@@ -60,6 +59,7 @@ import static com.android.launcher3.popup.SystemShortcut.APP_LOCK;
 import static com.android.launcher3.popup.SystemShortcut.BUBBLE_SHORTCUT;
 import static com.android.launcher3.popup.SystemShortcut.CUSTOM_ICON;
 import static com.android.launcher3.popup.SystemShortcut.DONT_SUGGEST_APP;
+import com.android.launcher3.applibrary.AppLibraryTouchController;
 import static com.android.launcher3.popup.SystemShortcut.FLOATING;
 import static com.android.launcher3.popup.SystemShortcut.INSTALL;
 import static com.android.launcher3.popup.SystemShortcut.KILL_APP;
@@ -107,6 +107,7 @@ import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.SparseArray;
+import android.util.Log;
 import android.view.HapticFeedbackConstants;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -173,6 +174,7 @@ import com.android.launcher3.statemanager.StateManager.AtomicAnimationFactory;
 import com.android.launcher3.statemanager.StateManager.StateHandler;
 import com.android.launcher3.statemanager.StateManager.StateListener;
 import com.android.launcher3.taskbar.TaskbarInteractor;
+import com.android.launcher3.statemanager.StateManager.StateListener;
 import com.android.launcher3.taskbar.TaskbarUiState;
 import com.android.launcher3.taskbar.TaskbarUiStateMonitor;
 import com.android.launcher3.taskbar.bubbles.BubbleActivityStarter;
@@ -345,10 +347,29 @@ public class QuickstepLauncher extends Launcher implements RecentsViewContainer,
         mDepthController = new LauncherDepthController(this, blurState);
         getTheme().applyStyle(blurEnabled ? R.style.OverviewBlurStyle
                 : R.style.OverviewBlurFallbackStyle, true);
-        if (blurOnMoreSurfaces()) {
             getTheme().applyStyle(blurEnabled ? R.style.FolderBlurStyle
                     : R.style.FolderBlurFallbackStyle, true);
+    }
+
+    private StateListener noStatusBarStateListener = new StateManager.StateListener<LauncherState>() {
+        @Override
+        public void onStateTransitionStart(LauncherState toState) {
+            if (toState == OVERVIEW) {
+                getWindow().getDecorView().getWindowInsetsController().show(WindowInsetsCompat.Type.statusBars());
+            }
         }
+
+        @Override
+        public void onStateTransitionComplete(LauncherState finalState) {
+            if (finalState != OVERVIEW) {
+                getWindow().getDecorView().getWindowInsetsController().hide(WindowInsetsCompat.Type.statusBars());
+            }
+        }
+    };
+
+    @Override
+    protected LauncherOverlayManager getDefaultOverlay() {
+        return new OverlayCallbackImpl(this);
     }
 
     private StateListener noStatusBarStateListener = new StateManager.StateListener<LauncherState>() {
@@ -383,7 +404,6 @@ public class QuickstepLauncher extends Launcher implements RecentsViewContainer,
 
         mActionsView = findViewById(R.id.overview_actions_view);
         mMemInfoView = findViewById(R.id.meminfo);
-
         RecentsView<?, LauncherState> overviewPanel = getOverviewPanel();
         SystemUiProxy systemUiProxy = SystemUiProxy.INSTANCE.get(this);
         mSplitSelectStateController =
@@ -407,7 +427,6 @@ public class QuickstepLauncher extends Launcher implements RecentsViewContainer,
                 mSplitSelectStateController);
         mActionsView.updateDimension(getDeviceProfile(), overviewPanel.getLastComputedTaskSize());
         mActionsView.updateVerticalMargin(DisplayController.getNavigationMode(this));
-
         mMemInfoView.setDp(getDeviceProfile());
         mMemInfoView.updateVerticalMargin(DisplayController.getNavigationMode(this));
 
@@ -595,11 +614,11 @@ public class QuickstepLauncher extends Launcher implements RecentsViewContainer,
         // TODO(b/444744861): Update private space apps to have its own container.
         boolean isPinnable = itemInfo instanceof ItemInfoWithIcon info
                 && (info.runtimeStatusFlags & FLAG_NOT_PINNABLE) == 0;
-        if (LauncherPrefs.WORKSPACE_LOCK.get(this)
+        if (Utilities.isWorkspaceEditAllowed(this)
                 && (container == CONTAINER_HOTSEAT || container == CONTAINER_DESKTOP
                 || /* Folder */ container > 0)) {
             shortcuts.add(REMOVE);
-        } else if (LauncherPrefs.WORKSPACE_LOCK.get(this) && isPinnable
+        } else if (Utilities.isWorkspaceEditAllowed(this) && isPinnable
                 && (container == CONTAINER_ALL_APPS
                 || container == CONTAINER_ALL_APPS_PREDICTION)) {
             shortcuts.add(ADD_TO_HOME_SCREEN);
@@ -826,6 +845,7 @@ public class QuickstepLauncher extends Launcher implements RecentsViewContainer,
                 break;
         }
         list.add(new StatusBarTouchController(this, () -> this.isInState(LauncherState.NORMAL)));
+        list.add(new AppLibraryTouchController(this));
         list.add(new TaskViewLaunchTouchController<>(this,
                 animController -> getStateManager().setCurrentUserControlledAnimation(
                         animController)));
@@ -1367,7 +1387,7 @@ public class QuickstepLauncher extends Launcher implements RecentsViewContainer,
     }
 
     @Override
-    public MemInfoView getMemInfoView () {
+    public MemInfoView getMemInfoView() {
         return mMemInfoView;
     }
 
@@ -1805,7 +1825,6 @@ public class QuickstepLauncher extends Launcher implements RecentsViewContainer,
     public boolean isOnBackInvokedCallbackEnabled() {
         return getApplicationInfo().isOnBackInvokedCallbackEnabled();
     }
-
     /**
      * Reapply suspensions to apps we paused, so as to update suspend dialogs. This is necessary
      * to ensure that the resources used by the dialog are still correct, particularly in the event

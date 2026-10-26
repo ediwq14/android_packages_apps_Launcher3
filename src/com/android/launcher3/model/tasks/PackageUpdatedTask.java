@@ -36,6 +36,8 @@ import com.android.launcher3.LauncherModel.ModelUpdateTask;
 import com.android.launcher3.R;
 import com.android.launcher3.Utilities;
 import com.android.launcher3.automation.AutomationRepository;
+import com.android.launcher3.R;
+import com.android.launcher3.Utilities;
 import com.android.launcher3.icons.IconCache;
 import com.android.launcher3.logging.FileLog;
 import com.android.launcher3.model.AllAppsList;
@@ -103,6 +105,7 @@ public class PackageUpdatedTask implements ModelUpdateTask {
 
         boolean needsRestart = false;
         final HashMap<String, List<LauncherActivityInfo>> activitiesLists = new HashMap<>();
+        boolean needsRestart = false;
         for (String packageName : mPackages) {
             iconCache.updateIconsForPkg(packageName, mUser);
             activitiesLists.put(packageName, appsList.updatePackage(context, packageName, mUser));
@@ -110,6 +113,8 @@ public class PackageUpdatedTask implements ModelUpdateTask {
                 needsRestart = true;
             }
         }
+
+        needsRestart = mPackages.stream().anyMatch(this::isTargetPackage);
 
         taskController.bindApplicationsIfNeeded();
 

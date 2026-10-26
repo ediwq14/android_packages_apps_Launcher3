@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (C) 2022 crDroid Android Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+<resources>
+    <!-- Application name -->
+    <string name="mistify_home" translatable="false">Mistify Home</string>
+
+    <!-- Folder titles -->
+
+
+    <!-- Settings title to show Google Now at -1 screen on launcher. [CHAR LIMIT=50] -->
+    <!-- Settings message explaining when the -1 screen is available on an LTR device. [CHAR LIMIT=100] -->
+    <!-- Settings message explaining when the -1 screen is available on an RTL device. [CHAR LIMIT=100] -->
+
+    <!-- Suggestions -->
+
+    <!-- Restart launcher -->
+
+    <!-- DT2S -->
+
+    <!-- Edit workspace -->
+
+    <!-- All apps themed icons -->
+    <string name="pref_themed_icons_title">Use themed icons in drawer</string>
+    <string name="pref_themed_icons_summary">Follow themed icons used on home screen</string>
+
+    <!-- Hide labels -->
+
+    <!-- Trust apps -->
+    <string name="trust_apps_manager_name">Hidden &amp; Protected apps</string>
+    <string name="trust_apps_auth_manager">Unlock to manage the hidden and protected apps</string>
+    <string name="trust_apps_auth_open_app">Authenticate to open %1$s</string>
+    <string name="trust_apps_loading">Loading\u2026</string>
+    <string name="trust_apps_no_lock_error">Please set up a secure lock screen to restrict app access</string>
+    <string name="trust_apps_help">Help</string>
+    <string name="trust_apps_info_hidden">Hidden apps and their widgets are hidden from the drawer</string>
+    <string name="trust_apps_info_protected">Protected apps require authentication to be opened from the launcher</string>
+
+    <!-- Icon size -->
+
+    <!-- Font size -->
+
+    <!-- Pause apps shortcut -->
+
+    <!-- App label -->
+
+    <!-- Kill App recents action shortcut -->
+
+    <!-- Row Height -->
+
+    <!-- Hotseat Background -->
+
+    <!-- Background opacity -->
+
+    <!-- Search bar -->
+    <string name="pref_show_hotseat_qsb_title">Show search bar</string>
+    <string name="pref_show_hotseat_qsb_summary">At the bottom of your home screen</string>
+
+    <!-- App drawer searchbar -->
+    <string name="drawer_search_summary">Search bar on top of the app drawer</string>
+
+    <!-- Wallpaper scrolling -->
+
+    <!-- Wallpaper zooming -->
+
+    <!-- Homescreen Statusbar -->
+
+    <!-- Top shadow -->
+
+    <!-- Memory info -->
+
+    <!-- Recents icons -->
+
+    <!-- Recents style -->
+    <string name="recents_style_title">Recent apps style</string>
+    <string-array name="recents_style_entries">
+        <item>Default</item>
+        <item>One UI Grid</item>
+        <item>Mistify Stack</item>
+        <item>iOS</item>
+        <item>Horizontal</item>
+    </string-array>
+    <string-array name="recents_style_values">
+        <item>default</item>
+        <item>oneui_grid</item>
+        <item>oneui_stack</item>
+        <item>ios</item>
+        <item>miui_horizontal</item>
+    </string-array>
+
+    <!-- Parallax -->
+
+    <!-- App drawer scrollbar -->
+
+    <!-- Dark Status Bar -->
+
+    <string name="app_library_title">App Library</string>
+    <string name="app_library_search_hint">App Library</string>
+    <string name="app_library_search_cancel">Cancel</string>
+    <string name="app_library_search_clear">Clear search</string>
+    <string name="pref_app_library_title">App Library</string>
+    <string name="pref_app_library_summary">Show an iOS-style categorized application library</string>
+    <string name="pref_app_library_single_page_title">Single Home Page Mode</string>
+    <string name="pref_app_library_single_page_summary">Keep only one home screen and access App Library with one swipe</string>
+
+    <string name="app_category_suggestions">Suggestions</string>
+    <string name="app_category_recently_added">Recently Added</string>
+    <string name="app_category_social">Social</string>
+    <string name="app_category_communication">Communication</string>
+    <string name="app_category_productivity">Productivity</string>
+    <string name="app_category_finance">Finance</string>
+    <string name="app_category_shopping">Shopping</string>
+    <string name="app_category_entertainment">Entertainment</string>
+    <string name="app_category_games">Games</string>
+    <string name="app_category_photography">Photography</string>
+    <string name="app_category_video">Video</string>
+    <string name="app_category_music">Music</string>
+    <string name="app_category_travel">Travel</string>
+    <string name="app_category_navigation">Navigation</string>
+    <string name="app_category_education">Education</string>
+    <string name="app_category_health_fitness">Health &amp; Fitness</string>
+    <string name="app_category_utilities">Utilities</string>
+    <string name="app_category_tools">Tools</string>
+    <string name="app_category_lifestyle">Lifestyle</string>
+    <string name="app_category_news">News</string>
+    <string name="app_category_books">Books</string>
+    <string name="app_category_food">Food</string>
+    <string name="app_category_other">Other</string>
+
+    <!-- Hotseat searchbar -->
+    <string name="label_ai_mode">AI Mode</string>
+    <string name="ai_mode_not_available">AI functionality not available</string>
+    <string name="hotseat_qsb_height_title">QSB height</string>
+    <string name="hotseat_qsb_height_summary">Use full QSB height instead of icon height</string>
+    <string name="qsb_style_google_title">Google-style search bar</string>
+    <string name="qsb_style_google_summary">Use the QSB design with AI and Lens buttons</string>
+    <string name="pixel_qsb_bg_opacity_title">Pixel QSB background opacity</string>
+    <string name="pixel_qsb_bg_opacity_summary">Transparency of the Google-style search bar background</string>
+</resources>

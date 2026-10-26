@@ -18,9 +18,12 @@ package com.android.launcher3.uioverrides.touchcontrollers;
 import static com.android.launcher3.AbstractFloatingView.TYPE_TOUCH_CONTROLLER_NO_INTERCEPT;
 import static com.android.launcher3.AbstractFloatingView.getTopOpenViewWithType;
 import static com.android.launcher3.LauncherState.ALL_APPS;
+import static com.android.launcher3.LauncherState.APP_LIBRARY;
 import static com.android.launcher3.LauncherState.NORMAL;
 import static com.android.launcher3.LauncherState.OVERVIEW;
 import static com.android.window.flags.Flags.betterDeskDeactivationInRecentsTransition;
+
+import com.android.launcher3.LauncherPrefs;
 
 import android.view.MotionEvent;
 
@@ -69,8 +72,10 @@ public class PortraitStatesTouchController extends AbstractStateChangeTouchContr
             // Otherwise, don't intercept so they can scroll recents, dismiss a task, etc.
             return false;
         }
+        if (mLauncher.isInState(APP_LIBRARY)) {
+            return false;
+        }
         if (mLauncher.isInState(ALL_APPS)) {
-            // In all-apps only listen if the container cannot scroll itself
             if (!mLauncher.getAppsView().shouldContainerScroll(ev)) {
                 return false;
             }
@@ -79,7 +84,6 @@ public class PortraitStatesTouchController extends AbstractStateChangeTouchContr
                 return false;
             }
         } else {
-            // For non-normal states, only listen if the event originated below the hotseat height
             if (!interceptAnywhere && !isTouchOverHotseat(mLauncher, ev)) {
                 return false;
             }
@@ -92,10 +96,11 @@ public class PortraitStatesTouchController extends AbstractStateChangeTouchContr
 
     @Override
     protected LauncherState getTargetState(LauncherState fromState, boolean isDragTowardPositive) {
+        boolean isAppLibraryEnabled = LauncherPrefs.get(mLauncher).get(LauncherPrefs.APP_LIBRARY_ENABLED);
         if (fromState == ALL_APPS && !isDragTowardPositive) {
             return NORMAL;
         } else if (fromState == NORMAL && shouldOpenAllApps(isDragTowardPositive)) {
-            return ALL_APPS;
+            return isAppLibraryEnabled ? APP_LIBRARY : ALL_APPS;
         }
         return fromState;
     }

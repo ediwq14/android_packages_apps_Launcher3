@@ -111,15 +111,7 @@ public class Hotseat extends CellLayout implements Insettable {
     public Hotseat(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
         if (Utilities.showQSB(context)) {
-            int layoutRes = LauncherPrefs.DOCK_SEARCH_PIXEL_STYLE.get(context)
-                    ? R.layout.qsb_container_hotseat_pixel
-                    : R.layout.qsb_container_hotseat;
-            mQsb = LayoutInflater.from(context).inflate(layoutRes, this, false);
-        } else {
-            mQsb = null;
-        }
-
-        if (mQsb != null) {
+            mQsb = LauncherComponentProvider.get(context).getQsbWidgetFactory().createView(this);
             addView(mQsb);
             if (mQsb instanceof Reorderable qsbReorderable) {
                 mQsbTranslationX = qsbReorderable.getTranslateDelegate()
@@ -128,9 +120,9 @@ public class Hotseat extends CellLayout implements Insettable {
             mQsbAlphaChannels = new MultiValueAlpha(mQsb, ALPHA_CHANNEL_CHANNELS_COUNT);
             mQsbAlphaChannels.setUpdateVisibility(true);
         } else {
+            mQsb = null;
             mQsbAlphaChannels = null;
         }
-
         mIconsAlphaChannels = new MultiValueAlpha(getShortcutsAndWidgets(),
                 ALPHA_CHANNEL_CHANNELS_COUNT);
         mIconsAlphaChannels.setUpdateVisibility(true);
@@ -282,7 +274,6 @@ public class Hotseat extends CellLayout implements Insettable {
         FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) getLayoutParams();
         DeviceProfile grid = mActivity.getDeviceProfile();
 
-        int topOverlap = 0;
         if (grid.isVerticalBarLayout()) {
             if (mQsb != null) mQsb.setVisibility(View.GONE);
             lp.height = ViewGroup.LayoutParams.MATCH_PARENT;
@@ -294,20 +285,16 @@ public class Hotseat extends CellLayout implements Insettable {
                 lp.width = grid.getHotseatProfile().getBarSizePx() + insets.right;
             }
         } else {
-            if (mQsb != null) mQsb.setVisibility(View.VISIBLE);
+            if (mQsb != null) {
+                mQsb.setVisibility(grid.isHotseatQsbEnabled() ? View.VISIBLE : View.GONE);
+            }
             lp.gravity = Gravity.BOTTOM;
             lp.width = ViewGroup.LayoutParams.MATCH_PARENT;
-
-            // Since QSB is laid out relative to bottom, it expects a certain amount of available
-            // space in its parent (hotseat). If hotseatBarSizePx is less than that, we let it go
-            // beyond and offset the content accordingly.
-            int totalHeightForQsb = grid.getQsbOffsetY() + grid.getHotseatProfile().getQsbHeight();
-            topOverlap = Math.max(0, totalHeightForQsb - grid.getHotseatProfile().getBarSizePx());
-            lp.height = grid.getHotseatProfile().getBarSizePx() + topOverlap;
+            lp.height = grid.getHotseatProfile().getBarSizePx();
         }
 
         Rect padding = grid.getHotseatLayoutPadding(getContext());
-        setPadding(padding.left, padding.top + topOverlap, padding.right, padding.bottom);
+        setPadding(padding.left, padding.top, padding.right, padding.bottom);
         setLayoutParams(lp);
         InsettableFrameLayout.dispatchInsets(this, insets);
     }
@@ -353,7 +340,7 @@ public class Hotseat extends CellLayout implements Insettable {
         if (mQsb != null && mQsb.getVisibility() != View.GONE) {
             DeviceProfile dp = mActivity.getDeviceProfile();
             mQsb.measure(
-                    makeMeasureSpec(dp.getHotseatProfile().getQsbWidth(), MeasureSpec.EXACTLY),
+                    makeMeasureSpec(dp.getHotseatQsbWidth(), MeasureSpec.EXACTLY),
                     makeMeasureSpec(dp.getHotseatProfile().getQsbHeight(), MeasureSpec.EXACTLY)
             );
         }
@@ -377,9 +364,25 @@ public class Hotseat extends CellLayout implements Insettable {
         }
         int right = left + qsbMeasuredWidth;
 
-        int bottom = b - t - dp.getQsbOffsetY();
-        int top = bottom - dp.getHotseatProfile().getQsbHeight();
-        mQsb.layout(left, top, right, bottom);
+        int height = b - t;
+        int qsbHeight = dp.getHotseatProfile().getQsbHeight();
+        int bottomOffset;
+        int subtraction;
+        if (dp.getHotseatProfile().isQsbInline()) {
+            bottomOffset = dp.getHotseatBarBottomPadding();
+            subtraction = (qsbHeight - dp.getHotseatProfile().getCellHeightPx()) / 2;
+        } else if (dp.getDeviceProperties().getTaskbarConfiguration().isTaskbarPresent()) {
+            int offsetY = (dp.getHotseatProfile().getBarSizePx() - qsbHeight)
+                    + dp.getHotseatProfile().getQsbShadowHeight();
+            int bottom = height - offsetY;
+            mQsb.layout(left, bottom - qsbHeight, right, bottom);
+            return;
+        } else {
+            bottomOffset = dp.getHotseatProfile().getBarBottomSpacePx();
+            subtraction = dp.getHotseatProfile().getQsbShadowHeight();
+        }
+        int bottom = height - (bottomOffset - subtraction);
+        mQsb.layout(left, bottom - qsbHeight, right, bottom);
     }
 
     /**
@@ -421,7 +424,7 @@ public class Hotseat extends CellLayout implements Insettable {
     @Nullable
     @Override
     public View mapOverItems(ItemOperator op) {
-        if (mQsb != null
+        if (mQsb != null && mQsb.getVisibility() != View.GONE
                 && mQsb.getTag() instanceof ItemInfo info
                 && op.evaluate(info, mQsb)) {
             return mQsb;

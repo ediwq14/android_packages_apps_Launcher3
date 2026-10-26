@@ -58,6 +58,7 @@ import static com.android.launcher3.LauncherSettings.Favorites.CONTAINER_DESKTOP
 import static com.android.launcher3.LauncherSettings.Favorites.CONTAINER_HOTSEAT;
 import static com.android.launcher3.LauncherSettings.Favorites.ITEM_TYPE_APPLICATION;
 import static com.android.launcher3.LauncherState.ALL_APPS;
+import static com.android.launcher3.LauncherState.APP_LIBRARY;
 import static com.android.launcher3.LauncherState.BACKGROUND_APP;
 import static com.android.launcher3.LauncherState.EDIT_MODE;
 import static com.android.launcher3.LauncherState.FLAG_MULTI_PAGE;
@@ -92,6 +93,7 @@ import static com.android.launcher3.popup.SystemShortcut.ADD_TO_HOME_SCREEN;
 import static com.android.launcher3.popup.SystemShortcut.APP_INFO;
 import static com.android.launcher3.popup.SystemShortcut.CUSTOM_ICON;
 import static com.android.launcher3.popup.SystemShortcut.INSTALL;
+import static com.android.launcher3.popup.SystemShortcut.UNINSTALL;
 import static com.android.launcher3.popup.SystemShortcut.REMOVE;
 import static com.android.launcher3.popup.SystemShortcut.RENAME_APP;
 import static com.android.launcher3.popup.SystemShortcut.UNINSTALL;
@@ -164,6 +166,10 @@ import com.android.launcher3.allapps.AllAppsTransitionController;
 import com.android.launcher3.allapps.DiscoveryBounce;
 import com.android.launcher3.anim.AnimationSuccessListener;
 import com.android.launcher3.anim.PropertyListBuilder;
+import com.android.launcher3.applibrary.AppLibraryTouchController;
+import com.android.launcher3.applibrary.AppLibraryTransitionController;
+import com.android.launcher3.applibrary.model.AppLibraryModel;
+import com.android.launcher3.applibrary.view.AppLibraryContainerView;
 import com.android.launcher3.apppairs.AppPairIcon;
 import com.android.launcher3.celllayout.CellPosMapper;
 import com.android.launcher3.celllayout.CellPosMapper.CellPos;
@@ -334,6 +340,9 @@ public class Launcher extends StatefulActivity<LauncherState>
     @Thunk
     ActivityAllAppsContainerView<Launcher> mAppsView;
     AllAppsTransitionController mAllAppsController;
+    AppLibraryContainerView mAppLibraryView;
+    AppLibraryTransitionController mAppLibraryTransitionController;
+    AppLibraryModel mAppLibraryModel;
     // Views that should be blurred when All Apps is open or depth is otherwise applied.
     private List<View> mDepthBlurTargets;
 
@@ -433,6 +442,7 @@ public class Launcher extends StatefulActivity<LauncherState>
 
         initDragController();
         mAllAppsController = new AllAppsTransitionController(this);
+        mAppLibraryTransitionController = new AppLibraryTransitionController(this);
         mStateManager = new StateManager<>(this, NORMAL);
         mStateManager.setLauncherUiState(mLauncherUiState);
 
@@ -1084,12 +1094,14 @@ public class Launcher extends StatefulActivity<LauncherState>
         AccessibilityManagerCompat.sendStateEventToTest(this, state.ordinal);
 
         if (state == NORMAL) {
-            // Re-enable any Un/InstallShortcutReceiver and now process any queued items
             ItemInstallQueue.INSTANCE.get(this)
                     .resumeModelPush(FLAG_DRAG_AND_DROP);
 
-            // Clear any rotation locks when going to normal state
             getRotationHelper().setCurrentStateRequest(REQUEST_NONE);
+
+            if (mAppLibraryTransitionController != null) {
+                mAppLibraryTransitionController.setState(NORMAL);
+            }
         }
 
         if (ALL_APPS.equals(mPrevLauncherState) && !ALL_APPS.equals(state)
@@ -1126,6 +1138,8 @@ public class Launcher extends StatefulActivity<LauncherState>
         mLauncherUiState.setIsResumedActivity(true);
         DragView.removeAllViews(this);
         TraceHelper.INSTANCE.endSection();
+
+        LauncherAppState.INSTANCE.executeIfCreated(app -> app.checkIfRestartNeeded());
     }
 
     @Override
@@ -1229,6 +1243,12 @@ public class Launcher extends StatefulActivity<LauncherState>
         // Setup the drag controller (drop targets have to be added in reverse order in priority)
         mDropTargetBar.setup(mDragController);
         mAllAppsController.setupViews(mScrimView, mAppsView);
+        mAppLibraryView = findViewById(R.id.app_library_view);
+        if (mAppLibraryView != null) {
+            mAppLibraryTransitionController.setupViews(mScrimView, mAppLibraryView);
+            mAppLibraryModel = new AppLibraryModel(this, mAppsView.getAppsStore());
+            mAppLibraryView.setModel(mAppLibraryModel);
+        }
 
         mWorkspace.getPageIndicator().setShouldAutoHide(LauncherPrefs.AUTO_HIDE_DOTS.get(this) &&
                 !shouldEnableMouseInteractionChanges(mWorkspace.getContext()));
@@ -1514,21 +1534,25 @@ public class Launcher extends StatefulActivity<LauncherState>
     }
 
     private void toggleAllApps(boolean alreadyOnHome, boolean focusSearch) {
-        if (getStateManager().isInStableState(ALL_APPS)) {
+        boolean isAppLibraryEnabled = LauncherPrefs.get(this).get(LauncherPrefs.APP_LIBRARY_ENABLED);
+        LauncherState targetAllAppsState = isAppLibraryEnabled ? LauncherState.APP_LIBRARY : ALL_APPS;
+        if (getStateManager().isInStableState(targetAllAppsState)) {
             getStateManager().goToState(NORMAL, alreadyOnHome);
         } else {
             if (mWorkspace.isOverlayShown()) {
-                mOverlayManager.hideOverlay(/* animate */true);
+                mOverlayManager.hideOverlay(true);
             }
             AbstractFloatingView.closeAllOpenViews(this);
-            getStateManager().goToState(ALL_APPS, true /* animated */,
+            getStateManager().goToState(targetAllAppsState, true,
                     new AnimationSuccessListener() {
                         @Override
                         public void onAnimationSuccess(Animator animator) {
-                            if (focusSearch
-                                    && mAppsView.getSearchUiManager().getEditText() != null) {
-                                mAppsView.getSearchUiManager().getEditText()
-                                    .requestFocusExplicitly();
+                            if (focusSearch) {
+                                if (isAppLibraryEnabled && mAppLibraryView != null && mAppLibraryView.getSearchBar() != null && mAppLibraryView.getSearchBar().getEditText() != null) {
+                                    mAppLibraryView.getSearchBar().getEditText().requestFocus();
+                                } else if (mAppsView.getSearchUiManager().getEditText() != null) {
+                                    mAppsView.getSearchUiManager().getEditText().requestFocusExplicitly();
+                                }
                             }
                         }
                     });
@@ -1542,12 +1566,17 @@ public class Launcher extends StatefulActivity<LauncherState>
 
     private void showAllAppsWithSelectedTabFromIntent(boolean alreadyOnHome, int tab) {
         AbstractFloatingView.closeAllOpenViews(this);
-        getStateManager().goToState(ALL_APPS, alreadyOnHome);
-        if (mAppsView.isSearching()) {
-            mAppsView.getSearchUiManager().resetSearch();
-        }
-        if (mAppsView.getCurrentPage() != tab) {
-            mAppsView.switchToTab(tab);
+        boolean isAppLibraryEnabled = LauncherPrefs.get(this).get(LauncherPrefs.APP_LIBRARY_ENABLED);
+        if (isAppLibraryEnabled) {
+            getStateManager().goToState(LauncherState.APP_LIBRARY, alreadyOnHome);
+        } else {
+            getStateManager().goToState(ALL_APPS, alreadyOnHome);
+            if (mAppsView.isSearching()) {
+                mAppsView.getSearchUiManager().resetSearch();
+            }
+            if (mAppsView.getCurrentPage() != tab) {
+                mAppsView.switchToTab(tab);
+            }
         }
     }
 
@@ -1618,6 +1647,10 @@ public class Launcher extends StatefulActivity<LauncherState>
         mAppWidgetHolder.destroy();
         mWidgetVisibilityTracker.destroy();
         mWidgetPickerDataProvider.destroy();
+
+        if (mAppLibraryModel != null) {
+            mAppLibraryModel.destroy();
+        }
 
         TextKeyListener.getInstance().release();
         modelCallbacks.clearPendingBinds();
@@ -2015,6 +2048,13 @@ public class Launcher extends StatefulActivity<LauncherState>
         }
 
         RunnableList result = super.startActivitySafely(v, intent, item);
+        if (result != null) {
+            result.add(() -> {
+                if (isInState(APP_LIBRARY)) {
+                    getStateManager().goToState(NORMAL, false);
+                }
+            });
+        }
         if (shouldShowHomeBehindDesktop()) {
             Runnable endAction = () -> {
                 closeOpenViews();
@@ -2038,6 +2078,12 @@ public class Launcher extends StatefulActivity<LauncherState>
             result.add(() -> btv.setStayPressed(false));
         }
         return result;
+    }
+
+    public void startActivitySafelyAuth(View v, Intent intent, ItemInfo item) {
+        Utilities.showLockScreen(this, getString(R.string.trust_apps_manager_name), () -> {
+            startActivitySafely(v, intent, item);
+        });
     }
 
     boolean isHotseatLayout(View layout) {
@@ -2462,11 +2508,16 @@ public class Launcher extends StatefulActivity<LauncherState>
     @Override
      public void collectStateHandlers(List<StateHandler<LauncherState>> out) {
         out.add(getAllAppsController());
+        out.add(getAppLibraryController());
         out.add(getWorkspace());
     }
 
     public TouchController[] createTouchControllers() {
-        return new TouchController[] {getDragController(), new AllAppsSwipeController(this)};
+        return new TouchController[] {
+                getDragController(),
+                new AllAppsSwipeController(this),
+                new AppLibraryTouchController(this)
+        };
     }
 
     public void onDragLayerHierarchyChanged() {
@@ -2724,6 +2775,18 @@ public class Launcher extends StatefulActivity<LauncherState>
 
     public AllAppsTransitionController getAllAppsController() {
         return mAllAppsController;
+    }
+
+    public AppLibraryContainerView getAppLibraryView() {
+        return mAppLibraryView;
+    }
+
+    public AppLibraryTransitionController getAppLibraryController() {
+        return mAppLibraryTransitionController;
+    }
+
+    public AppLibraryModel getAppLibraryModel() {
+        return mAppLibraryModel;
     }
 
     @Override

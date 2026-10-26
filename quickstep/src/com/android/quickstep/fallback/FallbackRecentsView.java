@@ -47,6 +47,7 @@ import com.android.quickstep.util.SurfaceTransactionApplier;
 import com.android.quickstep.views.MemInfoView;
 import com.android.quickstep.views.OverviewActionsView;
 import com.android.quickstep.views.RecentsDismissUtils;
+import com.android.quickstep.views.MemInfoView;
 import com.android.quickstep.views.RecentsView;
 import com.android.quickstep.views.RecentsViewContainer;
 import com.android.quickstep.views.TaskContainer;

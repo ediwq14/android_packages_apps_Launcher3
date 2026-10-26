@@ -263,4 +263,33 @@ constructor(
             ColorUtils.setAlphaComponent(color, (0.60f * 255).toInt())
         }
     }
+
+    override fun prepareToOpenPopup(popup: View) {
+        if (!isBlurEnabled()) return
+
+        val popupVisibility = popup.visibility
+        popup.visibility = View.INVISIBLE
+        val dragLayer = activityContext.dragLayer
+        val canvas = workspaceBlurRenderNode.beginRecording(
+            dragLayer.width,
+            dragLayer.height,
+        )
+        dragLayer.draw(canvas)
+        workspaceBlurRenderNode.endRecording()
+        workspaceBlurRenderNode.setPosition(0, 0, dragLayer.width, dragLayer.height)
+        popup.visibility = popupVisibility
+    }
+
+    override fun drawPopupBlur(canvas: Canvas, pathWrapper: PathWrapper?, view: View) {
+        if (!isBlurEnabled()) return
+        drawCrossWindowBlur(canvas, pathWrapper, view)
+        drawWorkspaceBlur(canvas, pathWrapper?.path, view)
+    }
+
+    override fun popupCloseComplete() {
+        if (workspaceBlurRenderNode.hasDisplayList()) {
+            workspaceBlurRenderNode.discardDisplayList()
+        }
+        folderBlurDrawable?.setVisible(false, false)
+    }
 }

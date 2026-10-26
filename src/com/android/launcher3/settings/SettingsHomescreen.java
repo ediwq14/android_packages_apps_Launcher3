@@ -1,25 +1,17 @@
-/*
- * Copyright (C) 2015 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.android.launcher3.settings;
+
+import static android.provider.Settings.Global.DEVELOPMENT_SETTINGS_ENABLED;
 
 import static androidx.preference.PreferenceFragmentCompat.ARG_PREFERENCE_ROOT;
 
+import static com.android.launcher3.BuildConfig.IS_STUDIO_BUILD;
+import static com.android.launcher3.InvariantDeviceProfile.TYPE_MULTI_DISPLAY;
+import static com.android.launcher3.InvariantDeviceProfile.TYPE_TABLET;
+import static com.android.launcher3.util.Executors.MAIN_EXECUTOR;
+
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
@@ -29,11 +21,11 @@ import android.view.MenuItem;
 import android.view.View;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.preference.Preference;
-import androidx.preference.PreferenceCategory;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceFragmentCompat.OnPreferenceStartFragmentCallback;
 import androidx.preference.PreferenceFragmentCompat.OnPreferenceStartScreenCallback;
@@ -42,28 +34,34 @@ import androidx.preference.PreferenceGroup.PreferencePositionCallback;
 import androidx.preference.PreferenceScreen;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.android.launcher3.BuildConfig;
+import com.android.launcher3.InvariantDeviceProfile;
 import com.android.launcher3.LauncherAppState;
 import com.android.launcher3.LauncherFiles;
 import com.android.launcher3.LauncherPrefs;
 import com.android.launcher3.R;
+import com.android.launcher3.display.DisplayController;
+import com.android.launcher3.display.LauncherDisplayInfo;
+import com.android.launcher3.util.SafeCloseable;
 import com.android.launcher3.Utilities;
-import com.android.launcher3.util.VibratorWrapper;
+import com.android.launcher3.util.SettingsCache;
 
 import com.android.settingslib.collapsingtoolbar.CollapsingToolbarBaseActivity;
 import com.android.settingslib.widget.SettingsBasePreferenceFragment;
 
-/**
- * Settings activity for Launcher.
- */
 public class SettingsHomescreen extends CollapsingToolbarBaseActivity
         implements OnPreferenceStartFragmentCallback, OnPreferenceStartScreenCallback,
         SharedPreferences.OnSharedPreferenceChangeListener {
 
-    public static final String EXTRA_FRAGMENT_ARGS = ":settings:fragment_args";
+    @VisibleForTesting
+    static final String DEVELOPER_OPTIONS_KEY = "pref_developer_options";
 
-    // Intent extra to indicate the pref-key to highlighted when opening the settings activity
+    public static final String FIXED_LANDSCAPE_MODE = "pref_fixed_landscape_mode";
+
+    private static final String NOTIFICATION_DOTS_PREFERENCE_KEY = "pref_icon_badging";
+
+    public static final String EXTRA_FRAGMENT_ARGS = ":settings:fragment_args";
     public static final String EXTRA_FRAGMENT_HIGHLIGHT_KEY = ":settings:fragment_args_key";
-    // Intent extra to indicate the pref-key of the root screen when opening the settings activity
     public static final String EXTRA_FRAGMENT_ROOT_KEY = ARG_PREFERENCE_ROOT;
 
     private static final int DELAY_HIGHLIGHT_DURATION_MILLIS = 600;
@@ -73,6 +71,7 @@ public class SettingsHomescreen extends CollapsingToolbarBaseActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.settings_activity);
+
 
         Intent intent = getIntent();
 
@@ -95,7 +94,6 @@ public class SettingsHomescreen extends CollapsingToolbarBaseActivity
             final Fragment f = fm.getFragmentFactory().instantiate(getClassLoader(),
                     getString(R.string.home_screen_settings_fragment_name));
             f.setArguments(args);
-            // Display the fragment as the main content.
             fm.beginTransaction().replace(com.android.settingslib.collapsingtoolbar.R.id.content_frame, f).commit();
         }
         LauncherPrefs.getPrefs(this).registerOnSharedPreferenceChangeListener(this);
@@ -112,34 +110,24 @@ public class SettingsHomescreen extends CollapsingToolbarBaseActivity
         if (LauncherPrefs.SHOW_HOTSEAT_BG.getSharedPrefKey().equals(key) ||
                 LauncherPrefs.HOTSEAT_OPACITY.getSharedPrefKey().equals(key) ||
                 LauncherPrefs.DOCK_SEARCH.getSharedPrefKey().equals(key) ||
-                LauncherPrefs.DOCK_SEARCH_PIXEL_STYLE.getSharedPrefKey().equals(key) ||
+                LauncherPrefs.QSB_STYLE_GOOGLE.getSharedPrefKey().equals(key) ||
                 LauncherPrefs.DOCK_THEME.getSharedPrefKey().equals(key) ||
                 LauncherPrefs.SEARCH_RADIUS_SIZE.getSharedPrefKey().equals(key) ||
                 LauncherPrefs.DOCK_MUSIC_SEARCH.getSharedPrefKey().equals(key) ||
                 LauncherPrefs.HOTSEAT_QSB_OPACITY.getSharedPrefKey().equals(key) ||
-                LauncherPrefs.HOTSEAT_QSB_OUTER_OPACITY.getSharedPrefKey().equals(key) ||
+                LauncherPrefs.HOTSEAT_QSB_GOOGLE_OPACITY.getSharedPrefKey().equals(key) ||
                 LauncherPrefs.HOTSEAT_QSB_STROKE_WIDTH.getSharedPrefKey().equals(key) ||
+                LauncherPrefs.HOTSEAT_QSB_HEIGHT.getSharedPrefKey().equals(key) ||
                 LauncherPrefs.SHOW_STATUS_BAR.getSharedPrefKey().equals(key) ||
                 LauncherPrefs.SHORT_PARALLAX.getSharedPrefKey().equals(key) ||
                 LauncherPrefs.SINGLE_PAGE_CENTER.getSharedPrefKey().equals(key) ||
-                LauncherPrefs.DARK_STATUS_BAR.getSharedPrefKey().equals(key) ||
-                LauncherPrefs.SHOW_QUICKSPACE.getSharedPrefKey().equals(key) ||
-                LauncherPrefs.SHOW_QUICKSPACE_ALT.getSharedPrefKey().equals(key) ||
-                LauncherPrefs.SHOW_QUICKSPACE_PSONALITY.getSharedPrefKey().equals(key) ||
-                LauncherPrefs.SHOW_QUICKSPACE_NOWPLAYING.getSharedPrefKey().equals(key) ||
-                LauncherPrefs.SHOW_QUICKSPACE_WEATHER.getSharedPrefKey().equals(key) ||
-                LauncherPrefs.SHOW_QUICKSPACE_WEATHER_CITY.getSharedPrefKey().equals(key) ||
-                LauncherPrefs.SHOW_QUICKSPACE_WEATHER_PROVIDER.getSharedPrefKey().equals(key) ||
-                LauncherPrefs.SHOW_QUICKSPACE_WEATHER_TEXT.getSharedPrefKey().equals(key) ||
-                LauncherPrefs.AUTO_HIDE_DOTS.getSharedPrefKey().equals(key)) {
+                LauncherPrefs.DARK_STATUS_BAR.getSharedPrefKey().equals(key)) {
             LauncherAppState.INSTANCE.executeIfCreated(app -> app.setNeedsRestart());
         }
     }
 
     private boolean startPreference(String fragment, Bundle args, String key) {
         if (getSupportFragmentManager().isStateSaved()) {
-            // Sometimes onClick can come after onPause because of being posted on the handler.
-            // Skip starting new preferences in that case.
             return false;
         }
         final FragmentManager fm = getSupportFragmentManager();
@@ -164,7 +152,7 @@ public class SettingsHomescreen extends CollapsingToolbarBaseActivity
     public boolean onPreferenceStartScreen(PreferenceFragmentCompat caller, PreferenceScreen pref) {
         Bundle args = new Bundle();
         args.putString(ARG_PREFERENCE_ROOT, pref.getKey());
-        return startPreference(getString(R.string.home_category_title), args, pref.getKey());
+        return startPreference(getString(R.string.home_screen_settings_fragment_name), args, pref.getKey());
     }
 
     @Override
@@ -176,10 +164,11 @@ public class SettingsHomescreen extends CollapsingToolbarBaseActivity
         return super.onOptionsItemSelected(item);
     }
 
-    /**
-     * This fragment shows the launcher preferences.
-     */
     public static class HomescreenSettingsFragment extends SettingsBasePreferenceFragment {
+
+        private @Nullable SafeCloseable mSettingCacheSafeCloseable;
+
+        protected boolean mDeveloperOptionsEnabled = false;
 
         private boolean mRestartOnResume = false;
 
@@ -188,12 +177,24 @@ public class SettingsHomescreen extends CollapsingToolbarBaseActivity
         private boolean mPreferenceHighlighted = false;
 
         private static final String KEY_MINUS_ONE = "pref_enable_minus_one";
-        private static final String KEY_GENERAL_CATEGORY = "general_category";
 
         private Preference mShowGoogleAppPref;
+        private Preference mShowGoogleBarPref;
 
         @Override
         public void onCreate(@Nullable Bundle savedInstanceState) {
+            if (BuildConfig.IS_DEBUG_DEVICE) {
+                Uri devUri = Settings.Global.getUriFor(DEVELOPMENT_SETTINGS_ENABLED);
+                SettingsCache settingsCache = SettingsCache.INSTANCE.get(getContext());
+                mDeveloperOptionsEnabled = settingsCache.getValue(devUri);
+                mSettingCacheSafeCloseable = settingsCache.getListenableRef(devUri).forEach(
+                        MAIN_EXECUTOR, (v) -> {
+                            if (v != mDeveloperOptionsEnabled) {
+                                tryRecreateActivity();
+                            }
+                            return null;
+                        });
+            }
             super.onCreate(savedInstanceState);
         }
 
@@ -210,19 +211,13 @@ public class SettingsHomescreen extends CollapsingToolbarBaseActivity
             setPreferencesFromResource(R.xml.launcher_home_screen_preferences, rootKey);
 
             PreferenceScreen screen = getPreferenceScreen();
+            initPreferences(screen);
 
             mShowGoogleAppPref = screen.findPreference(KEY_MINUS_ONE);
+            mShowGoogleBarPref = screen.findPreference(LauncherPrefs.DOCK_SEARCH.getSharedPrefKey());
             updateIsGoogleAppEnabled();
+            updateQsbStylePrefs();
 
-            if (!VibratorWrapper.INSTANCE.get(getContext()).hasVibrator()) {
-                PreferenceCategory generalCategory = (PreferenceCategory) findPreference(KEY_GENERAL_CATEGORY);
-                Preference d2SHaptic = screen.findPreference(LauncherPrefs.SLEEP_GESTURE_HAPTIC.getSharedPrefKey());
-                generalCategory.removePreference(d2SHaptic);
-            }
-
-            // If the target preference is not in the current preference screen, find the parent
-            // preference screen that contains the target preference and set it as the preference
-            // screen.
             if (mHighLightKey != null
                     && !isKeyInPreferenceGroup(mHighLightKey, screen)) {
                 final PreferenceScreen parentPreferenceScreen =
@@ -241,6 +236,17 @@ public class SettingsHomescreen extends CollapsingToolbarBaseActivity
             }
         }
 
+        private void initPreferences(PreferenceGroup group) {
+            for (int i = group.getPreferenceCount() - 1; i >= 0; i--) {
+                Preference preference = group.getPreference(i);
+                if (!initPreference(preference)) {
+                    group.removePreference(preference);
+                } else if (preference instanceof PreferenceGroup) {
+                    initPreferences((PreferenceGroup) preference);
+                }
+            }
+        }
+
         private boolean isKeyInPreferenceGroup(String targetKey, PreferenceGroup parent) {
             for (int i = 0; i < parent.getPreferenceCount(); i++) {
                 Preference pref = parent.getPreference(i);
@@ -251,13 +257,6 @@ public class SettingsHomescreen extends CollapsingToolbarBaseActivity
             return false;
         }
 
-        /**
-         * Finds the parent preference screen for the given target key.
-         *
-         * @param parent    the parent preference screen
-         * @param targetKey the key of the preference to find
-         * @return the parent preference screen that contains the target preference
-         */
         @Nullable
         private PreferenceScreen findParentPreference(PreferenceScreen parent, String targetKey) {
             for (int i = 0; i < parent.getPreferenceCount(); i++) {
@@ -289,7 +288,6 @@ public class SettingsHomescreen extends CollapsingToolbarBaseActivity
                 return insets.consumeSystemWindowInsets();
             });
 
-            // Overriding Text Direction in the Androidx preference library to support RTL
             view.setTextDirection(View.TEXT_DIRECTION_LOCALE);
         }
 
@@ -299,9 +297,16 @@ public class SettingsHomescreen extends CollapsingToolbarBaseActivity
             outState.putBoolean(SAVE_HIGHLIGHTED_KEY, mPreferenceHighlighted);
         }
 
+        protected boolean initPreference(Preference preference) {
+            return true;
+        }
+
         private void updateIsGoogleAppEnabled() {
             if (mShowGoogleAppPref != null) {
                 mShowGoogleAppPref.setEnabled(Utilities.isGSAEnabled(getContext()));
+            }
+            if (mShowGoogleBarPref != null) {
+                mShowGoogleBarPref.setEnabled(Utilities.isGSAEnabled(getContext()));
             }
         }
 
@@ -321,11 +326,52 @@ public class SettingsHomescreen extends CollapsingToolbarBaseActivity
             if (mRestartOnResume) {
                 recreateActivityNow();
             }
+            updateQsbStylePrefs();
+            LauncherPrefs.getPrefs(getContext())
+                    .registerOnSharedPreferenceChangeListener(mPrefListener);
         }
 
-        /**
-         * Tries to recreate the preference
-         */
+        @Override
+        public void onPause() {
+            super.onPause();
+            LauncherPrefs.getPrefs(getContext())
+                    .unregisterOnSharedPreferenceChangeListener(mPrefListener);
+        }
+
+        private final SharedPreferences.OnSharedPreferenceChangeListener mPrefListener =
+                (prefs, key) -> {
+                    if (LauncherPrefs.QSB_STYLE_GOOGLE.getSharedPrefKey().equals(key)) {
+                        updateQsbStylePrefs();
+                    }
+                };
+
+        private void updateQsbStylePrefs() {
+            boolean isGoogleStyle = LauncherPrefs.get(getContext())
+                    .get(LauncherPrefs.QSB_STYLE_GOOGLE);
+            // Standard QSB controls — enabled only when Google style is OFF
+            setQsbPrefEnabled(LauncherPrefs.HOTSEAT_QSB_OPACITY.getSharedPrefKey(), !isGoogleStyle);
+            setQsbPrefEnabled(LauncherPrefs.HOTSEAT_QSB_STROKE_WIDTH.getSharedPrefKey(), !isGoogleStyle);
+            setQsbPrefEnabled(LauncherPrefs.SEARCH_RADIUS_SIZE.getSharedPrefKey(), !isGoogleStyle);
+            // Google/Pixel QSB controls — enabled only when Google style is ON
+            setQsbPrefEnabled(LauncherPrefs.HOTSEAT_QSB_GOOGLE_OPACITY.getSharedPrefKey(), isGoogleStyle);
+        }
+
+        private void setQsbPrefEnabled(String key, boolean enabled) {
+            Preference pref = findPreference(key);
+            if (pref != null) {
+                pref.setEnabled(enabled);
+            }
+        }
+
+        @Override
+        public void onDestroy() {
+            super.onDestroy();
+            if (mSettingCacheSafeCloseable != null) {
+                mSettingCacheSafeCloseable.close();
+                mSettingCacheSafeCloseable = null;
+            }
+        }
+
         protected void tryRecreateActivity() {
             if (isResumed()) {
                 recreateActivityNow();

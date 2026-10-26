@@ -414,6 +414,7 @@ public class TaskOverlayFactory {
                 endLiveTileMode(TaskOverlay.this::enterSplitSelect);
             }
 
+            @Override
             public void onSaveAppPair() {
                 endLiveTileMode(TaskOverlay.this::saveAppPair);
             }

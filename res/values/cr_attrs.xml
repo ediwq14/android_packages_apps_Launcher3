@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-     Copyright (C) 2016-2026 crDroid Android Project
+     Copyright (C) 2016-2025 crDroid Android Project
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -16,6 +16,11 @@
 -->
 <resources>
 
+    <declare-styleable name="TintDrawable">
+        <attr name="android:tint" />
+        <attr name="android:drawable" />
+    </declare-styleable>
+
     <!-- Base attributes available to CustomSeekBarPreference. -->
     <declare-styleable name="CustomSeekBarPreference">
         <attr name="defaultValueText" format="string" />
@@ -28,18 +33,9 @@
     <!-- Hotseat searchbar -->
     <attr name="qsbFillColor" format="color" />
     <attr name="qsbFillColorThemed" format="color" />
-    <attr name="qsbOuterColorThemed" format="color" />
+    <attr name="qsbOuterColor" format="color" />
     <attr name="qsbIconTintPrimary" format="color" />
     <attr name="qsbIconTintQuaternary" format="color" />
     <attr name="qsbIconTintSecondary" format="color" />
     <attr name="qsbIconTintTertiary" format="color" />
-
-    <!-- ColorPicker -->
-    <declare-styleable name="ColorPickerPreference">
-        <attr name="alphaSlider" format="boolean" />
-        <attr name="showPreview" format="boolean" />
-        <attr name="showReset" format="boolean" />
-        <attr name="dividerAbove" format="boolean" />
-        <attr name="dividerBelow" format="boolean" />
-    </declare-styleable>
 </resources>

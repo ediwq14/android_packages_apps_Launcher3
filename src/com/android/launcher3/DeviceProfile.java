@@ -20,6 +20,7 @@ import static com.android.launcher3.InvariantDeviceProfile.createDisplayOptionSp
 import static com.android.launcher3.Utilities.dpiFromPx;
 import static com.android.launcher3.icons.IconNormalizer.ICON_VISIBLE_AREA_FACTOR;
 import static com.android.launcher3.taskbar.TaskbarManagerImpl.isTaskbarEnabledBySetting;
+import static com.android.launcher3.taskbar.TaskbarManagerImpl.ENABLE_TASKBAR_URI;
 import static com.android.launcher3.testing.shared.ResourceUtils.INVALID_RESOURCE_HANDLE;
 import static com.android.launcher3.testing.shared.ResourceUtils.pxFromDp;
 import static com.android.systemui.shared.Flags.enableRecentsInTaskbar;
@@ -69,6 +70,7 @@ import com.android.launcher3.responsive.ResponsiveSpec.DimensionType;
 import com.android.launcher3.responsive.ResponsiveSpecsProvider;
 import com.android.launcher3.util.IconSizeSteps;
 import com.android.launcher3.util.ResourceHelper;
+import com.android.launcher3.util.SettingsCache;
 import com.android.launcher3.util.WindowBounds;
 import com.android.launcher3.util.window.WindowManagerProxy;
 
@@ -122,9 +124,13 @@ public class DeviceProfile {
     private FolderProfile mFolderProfile;
     private AllAppsProfile mAllAppsProfile;
     private final OverviewProfile overviewProfile;
+    private final boolean mAllAppsIconText;
+    private final float mAllAppsCellHeightMultiplier;
 
     // Hotseat
     private HotseatProfile mHotseatProfile;
+
+    private final boolean mIsHotseatQsbEnabled;
 
     private SysuiProfile mSysuiProfile;
 
@@ -144,6 +150,10 @@ public class DeviceProfile {
 
     // Meminfo in overview
     public int memInfoHeight;
+
+    // Meminfo in overview
+    public int memInfoHeight;
+    public boolean isTaskbarPresent;
 
     /** Used only as an alternative to mocking when null values cannot be used. */
     @VisibleForTesting
@@ -187,6 +197,7 @@ public class DeviceProfile {
         );
         mHotseatProfile = new HotseatProfile(false, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, false);
+        mIsHotseatQsbEnabled = false;
         mTaskbarProfile = new TaskbarProfile(0, 0, 0, 0, 0, false, false, false);
         mFolderProfile = new FolderProfile(0, 0, 0, 0, 0, new Point(), 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0);
@@ -203,6 +214,8 @@ public class DeviceProfile {
         mViewScaleProvider = null;
         mAllAppsProfile = new AllAppsProfile(new Point(0, 0), 0, 0, 0f, 0, 0, 0, 0, 0, 0,
                 new Rect(), 0, 0);
+        mAllAppsCellHeightMultiplier = 1f;
+        mAllAppsIconText = true;
         mSysuiProfile = new SysuiProfile(0, 0, false);
         mEnableTaskbar = false;
     }
@@ -244,9 +257,18 @@ public class DeviceProfile {
                         : Configuration.ORIENTATION_PORTRAIT,
                 mDeviceProperties.createWindowBounds());
 
+        mIsHotseatQsbEnabled = LauncherPrefs.isHotseatQsbEnabled(context);
+
         final Resources res = context.getResources();
 
+        mAllAppsCellHeightMultiplier = LauncherPrefs.ROW_HEIGHT.get(context) / 100f;
+        mAllAppsIconText = LauncherPrefs.SHOW_DRAWER_LABELS.get(context);
+
         overviewProfile = OverviewProfile.Factory.createOverviewProfile(res);
+
+        memInfoHeight = LauncherPrefs.RECENTS_MEMINFO.get(context) ? res.getDimensionPixelSize(
+                R.dimen.meminfo_claimed_height) : 0;
+        isTaskbarPresent = mDeviceProperties.getTaskbarConfiguration().isTaskbarPresent();
 
         mMetrics = res.getDisplayMetrics();
 
@@ -298,7 +320,14 @@ public class DeviceProfile {
 
         isQsbVisible = Utilities.showQSB(context);
 
-        int qsbHeight = isQsbVisible ? res.getDimensionPixelSize(R.dimen.qsb_widget_height) : 0;
+        // qsbHeight is 0 when QSB is disabled (DOCK_SEARCH=false) OR when the user has
+        // requested that QSB not add extra height to the hotseat bar (HOTSEAT_QSB_HEIGHT=false).
+        // By zeroing it here, all downstream paths (HotseatProfileInitialValues,
+        // HotseatProfile.Factory, WorkspaceProfileNonResponsiveFactory) automatically use 0
+        // for qsbVisualHeight and qsbSpace, without needing a Context themselves.
+        int qsbHeight = (isQsbVisible
+                || (mIsHotseatQsbEnabled && LauncherPrefs.HOTSEAT_QSB_HEIGHT.get(context)))
+                ? res.getDimensionPixelSize(R.dimen.qsb_widget_height) : 0;
 
         HotseatProfileInitialValues hotseatProfileInitialValues =
                 HotseatProfileInitialValues.Factory.createHotseatProfileInitialValues(
@@ -885,7 +914,8 @@ public class DeviceProfile {
             // This is needed because of b/235886078 since QSB needs to span to the icon borders
             int iconExtraSpacePx = getWorkspaceProfile().getIconSizePx() - getIconVisibleSizePx(
                     getWorkspaceProfile().getIconSizePx());
-            int qsbWidth = getAdditionalQsbSpace() + iconExtraSpacePx / 2;
+            int qsbWidth = (mIsHotseatQsbEnabled ? getAdditionalQsbSpace() : 0)
+                    + iconExtraSpacePx / 2;
 
             int availableWidthPxForHotseat = mDeviceProperties.getAvailableWidthPx() - Math.abs(
                     mWorkspaceProfile.getWorkspacePadding().width())
@@ -929,7 +959,9 @@ public class DeviceProfile {
                 startSpacing = (mDeviceProperties.getAvailableWidthPx() - hotseatWidth) / 2;
                 endSpacing = startSpacing;
             }
-            startSpacing += getAdditionalQsbSpace();
+            if (mIsHotseatQsbEnabled) {
+                startSpacing += getAdditionalQsbSpace();
+            }
 
             hotseatBarPadding.top = hotseatBarTopPadding;
             hotseatBarPadding.bottom = hotseatBarBottomPadding;
@@ -947,7 +979,7 @@ public class DeviceProfile {
                     getWorkspaceProfile().getIconSizePx());
             int sideSpacing =
                     (mDeviceProperties.getAvailableWidthPx() - (
-                            mHotseatProfile.getQsbWidth() + iconExtraSpacePx))
+                            getHotseatQsbWidth() + iconExtraSpacePx))
                             / 2;
             hotseatBarPadding.set(sideSpacing,
                     0,
@@ -1013,9 +1045,25 @@ public class DeviceProfile {
     }
 
     private int getAdditionalQsbSpace() {
-        if (!isQsbVisible) return 0;
+        if (!isQsbVisible && !mIsHotseatQsbEnabled) return 0;
         return mHotseatProfile.isQsbInline() ? mHotseatProfile.getQsbWidth()
                 + mHotseatProfile.getBorderSpace() : 0;
+    }
+
+    public int getHotseatQsbWidth() {
+        if (!mIsHotseatQsbEnabled) return 0;
+        int iconExtraSpacePx = getWorkspaceProfile().getIconSizePx() - getIconVisibleSizePx(
+                getWorkspaceProfile().getIconSizePx());
+        if (mHotseatProfile.isQsbInline()) {
+            int columns = getPanelCount() * inv.numColumns;
+            return getWorkspaceProfile().getIconToIconWidthForColumns(columns)
+                    - getWorkspaceProfile().getIconSizePx() * mHotseatProfile.getNumShownIcons()
+                    - mHotseatProfile.getBorderSpace() * mHotseatProfile.getNumShownIcons()
+                    - iconExtraSpacePx;
+        } else {
+            return getWorkspaceProfile().getIconToIconWidthForColumns(
+                    mHotseatProfile.getColumnSpan()) - iconExtraSpacePx;
+        }
     }
 
     /**
@@ -1034,7 +1082,7 @@ public class DeviceProfile {
      * Returns the number of pixels the QSB is translated from the bottom of the screen.
      */
     public int getQsbOffsetY() {
-        if (!isQsbVisible) return 0;
+        if (!isQsbVisible && !mIsHotseatQsbEnabled) return 0;
         if (mHotseatProfile.isQsbInline()) {
             return getHotseatBarBottomPadding()
                     - ((getHotseatProfile().getQsbHeight()
@@ -1047,10 +1095,14 @@ public class DeviceProfile {
         }
     }
 
+    public boolean isHotseatQsbEnabled() {
+        return mIsHotseatQsbEnabled;
+    }
+
     /**
      * Returns the number of pixels the hotseat is translated from the bottom of the screen.
      */
-    private int getHotseatBarBottomPadding() {
+    public int getHotseatBarBottomPadding() {
         // QSB on top or inline
         if (mDeviceProperties.getTaskbarConfiguration().isTaskbarPresent()
                 || mHotseatProfile.isQsbInline()) {

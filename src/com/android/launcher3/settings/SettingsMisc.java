@@ -1,19 +1,3 @@
-/*
- * Copyright (C) 2015 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.android.launcher3.settings;
 
 import static android.provider.Settings.Global.DEVELOPMENT_SETTINGS_ENABLED;
@@ -28,7 +12,6 @@ import static com.android.launcher3.util.Executors.MAIN_EXECUTOR;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -54,49 +37,44 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.launcher3.BuildConfig;
 import com.android.launcher3.InvariantDeviceProfile;
-import com.android.launcher3.LauncherAppState;
 import com.android.launcher3.LauncherFiles;
-import com.android.launcher3.LauncherPrefs;
 import com.android.launcher3.R;
 import com.android.launcher3.display.DisplayController;
 import com.android.launcher3.display.LauncherDisplayInfo;
 import com.android.launcher3.util.SafeCloseable;
+import com.android.launcher3.Utilities;
+import com.android.launcher3.lineage.trust.TrustAppsActivity;
 import com.android.launcher3.util.SettingsCache;
 
 import com.android.settingslib.collapsingtoolbar.CollapsingToolbarBaseActivity;
 import com.android.settingslib.widget.SettingsBasePreferenceFragment;
 
-import com.android.systemui.shared.system.BlurUtils;
-
-/**
- * Settings activity for Launcher.
- */
 public class SettingsMisc extends CollapsingToolbarBaseActivity
-        implements OnPreferenceStartFragmentCallback, OnPreferenceStartScreenCallback,
-        SharedPreferences.OnSharedPreferenceChangeListener {
+        implements OnPreferenceStartFragmentCallback, OnPreferenceStartScreenCallback {
 
     @VisibleForTesting
     static final String DEVELOPER_OPTIONS_KEY = "pref_developer_options";
 
     public static final String FIXED_LANDSCAPE_MODE = "pref_fixed_landscape_mode";
 
+    private static final String NOTIFICATION_DOTS_PREFERENCE_KEY = "pref_icon_badging";
     private static final String SUGGESTIONS_KEY = "pref_suggestions";
     protected static final String DPS_PACKAGE = "com.google.android.as";
 
     public static final String EXTRA_FRAGMENT_ARGS = ":settings:fragment_args";
-
-    // Intent extra to indicate the pref-key to highlighted when opening the settings activity
     public static final String EXTRA_FRAGMENT_HIGHLIGHT_KEY = ":settings:fragment_args_key";
-    // Intent extra to indicate the pref-key of the root screen when opening the settings activity
     public static final String EXTRA_FRAGMENT_ROOT_KEY = ARG_PREFERENCE_ROOT;
 
     private static final int DELAY_HIGHLIGHT_DURATION_MILLIS = 600;
     public static final String SAVE_HIGHLIGHTED_KEY = "android:preference_highlighted";
 
+    public static final String KEY_TRUST_APPS = "pref_trust_apps";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.settings_activity);
+
 
         Intent intent = getIntent();
 
@@ -119,29 +97,12 @@ public class SettingsMisc extends CollapsingToolbarBaseActivity
             final Fragment f = fm.getFragmentFactory().instantiate(getClassLoader(),
                     getString(R.string.misc_settings_fragment_name));
             f.setArguments(args);
-            // Display the fragment as the main content.
             fm.beginTransaction().replace(com.android.settingslib.collapsingtoolbar.R.id.content_frame, f).commit();
-        }
-        LauncherPrefs.getPrefs(this).registerOnSharedPreferenceChangeListener(this);
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        LauncherPrefs.getPrefs(this).unregisterOnSharedPreferenceChangeListener(this);
-    }
-
-    @Override
-    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        if (LauncherPrefs.BLUR_DEPTH.getSharedPrefKey().equals(key)) {
-            LauncherAppState.INSTANCE.executeIfCreated(app -> app.setNeedsRestart());
         }
     }
 
     private boolean startPreference(String fragment, Bundle args, String key) {
         if (getSupportFragmentManager().isStateSaved()) {
-            // Sometimes onClick can come after onPause because of being posted on the handler.
-            // Skip starting new preferences in that case.
             return false;
         }
         final FragmentManager fm = getSupportFragmentManager();
@@ -166,7 +127,7 @@ public class SettingsMisc extends CollapsingToolbarBaseActivity
     public boolean onPreferenceStartScreen(PreferenceFragmentCompat caller, PreferenceScreen pref) {
         Bundle args = new Bundle();
         args.putString(ARG_PREFERENCE_ROOT, pref.getKey());
-        return startPreference(getString(R.string.misc_category_title), args, pref.getKey());
+        return startPreference(getString(R.string.misc_settings_fragment_name), args, pref.getKey());
     }
 
     @Override
@@ -178,9 +139,6 @@ public class SettingsMisc extends CollapsingToolbarBaseActivity
         return super.onOptionsItemSelected(item);
     }
 
-    /**
-     * This fragment shows the launcher preferences.
-     */
     public static class MiscSettingsFragment extends SettingsBasePreferenceFragment {
 
         private @Nullable SafeCloseable mSettingCacheSafeCloseable;
@@ -196,8 +154,6 @@ public class SettingsMisc extends CollapsingToolbarBaseActivity
         @Override
         public void onCreate(@Nullable Bundle savedInstanceState) {
             if (BuildConfig.IS_DEBUG_DEVICE) {
-                // Query DEVELOPMENT_SETTINGS_ENABLED and recreate activity if such setting
-                // has changed.
                 Uri devUri = Settings.Global.getUriFor(DEVELOPMENT_SETTINGS_ENABLED);
                 SettingsCache settingsCache = SettingsCache.INSTANCE.get(getContext());
                 mDeveloperOptionsEnabled = settingsCache.getValue(devUri);
@@ -225,16 +181,8 @@ public class SettingsMisc extends CollapsingToolbarBaseActivity
             setPreferencesFromResource(R.xml.launcher_misc_preferences, rootKey);
 
             PreferenceScreen screen = getPreferenceScreen();
-            for (int i = screen.getPreferenceCount() - 1; i >= 0; i--) {
-                Preference preference = screen.getPreference(i);
-                if (!initPreference(preference)) {
-                    screen.removePreference(preference);
-                }
-            }
+            initPreferences(screen);
 
-            // If the target preference is not in the current preference screen, find the parent
-            // preference screen that contains the target preference and set it as the preference
-            // screen.
             if (mHighLightKey != null
                     && !isKeyInPreferenceGroup(mHighLightKey, screen)) {
                 final PreferenceScreen parentPreferenceScreen =
@@ -253,6 +201,17 @@ public class SettingsMisc extends CollapsingToolbarBaseActivity
             }
         }
 
+        private void initPreferences(PreferenceGroup group) {
+            for (int i = group.getPreferenceCount() - 1; i >= 0; i--) {
+                Preference preference = group.getPreference(i);
+                if (!initPreference(preference)) {
+                    group.removePreference(preference);
+                } else if (preference instanceof PreferenceGroup) {
+                    initPreferences((PreferenceGroup) preference);
+                }
+            }
+        }
+
         private boolean isKeyInPreferenceGroup(String targetKey, PreferenceGroup parent) {
             for (int i = 0; i < parent.getPreferenceCount(); i++) {
                 Preference pref = parent.getPreference(i);
@@ -263,13 +222,6 @@ public class SettingsMisc extends CollapsingToolbarBaseActivity
             return false;
         }
 
-        /**
-         * Finds the parent preference screen for the given target key.
-         *
-         * @param parent    the parent preference screen
-         * @param targetKey the key of the preference to find
-         * @return the parent preference screen that contains the target preference
-         */
         @Nullable
         private PreferenceScreen findParentPreference(PreferenceScreen parent, String targetKey) {
             for (int i = 0; i < parent.getPreferenceCount(); i++) {
@@ -301,7 +253,6 @@ public class SettingsMisc extends CollapsingToolbarBaseActivity
                 return insets.consumeSystemWindowInsets();
             });
 
-            // Overriding Text Direction in the Androidx preference library to support RTL
             view.setTextDirection(View.TEXT_DIRECTION_LOCALE);
         }
 
@@ -311,22 +262,13 @@ public class SettingsMisc extends CollapsingToolbarBaseActivity
             outState.putBoolean(SAVE_HIGHLIGHTED_KEY, mPreferenceHighlighted);
         }
 
-        /**
-         * Initializes a preference. This is called for every preference. Returning false here
-         * will remove that preference from the list.
-         */
         protected boolean initPreference(Preference preference) {
+            LauncherDisplayInfo info = DisplayController.INSTANCE.get(getContext()).getInfo();
             String key = preference.getKey();
             if (key == null) {
                 return true;
             }
-
-            if (key.equals(LauncherPrefs.BLUR_DEPTH.getSharedPrefKey())) {
-                return BlurUtils.supportsBlursOnWindows();
-            }
-
-            LauncherDisplayInfo info = DisplayController.INSTANCE.get(getContext()).getInfo();
-            switch (preference.getKey()) {
+            switch (key) {
                 case DEVELOPER_OPTIONS_KEY:
                     if (IS_STUDIO_BUILD) {
                         preference.setOrder(0);
@@ -339,8 +281,6 @@ public class SettingsMisc extends CollapsingToolbarBaseActivity
                                     == TYPE_TABLET)) {
                         return false;
                     }
-                    // When the setting changes rotate the screen accordingly to showcase the result
-                    // of the setting
                     preference.setOnPreferenceChangeListener(
                             (pref, newValue) -> {
                                 getActivity().setRequestedOrientation(
@@ -352,6 +292,16 @@ public class SettingsMisc extends CollapsingToolbarBaseActivity
                             }
                     );
                     return !info.isLargeScreen(info.realBounds);
+                case KEY_TRUST_APPS:
+                    preference.setOnPreferenceClickListener(p -> {
+                        Utilities.showLockScreen(getActivity(),
+                                getString(R.string.trust_apps_manager_name), () -> {
+                            Intent intent = new Intent(getActivity(), TrustAppsActivity.class);
+                            startActivity(intent);
+                        });
+                        return true;
+                    });
+                    return true;
                 case SUGGESTIONS_KEY:
                     // Show if Device Personalization Services is present.
                     return isDPSEnabled(getContext());
@@ -393,9 +343,6 @@ public class SettingsMisc extends CollapsingToolbarBaseActivity
             }
         }
 
-        /**
-         * Tries to recreate the preference
-         */
         protected void tryRecreateActivity() {
             if (isResumed()) {
                 recreateActivityNow();

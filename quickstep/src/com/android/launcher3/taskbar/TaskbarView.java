@@ -234,11 +234,9 @@ public class TaskbarView extends FrameLayout implements FolderIcon.FolderIconPar
         mTaskbarUiState.setIsTaskbarViewShown(isShown());
         mTransientTaskbarMinWidth = resources.getDimension(R.dimen.transient_taskbar_min_width);
 
-        if (Utilities.showQSB(context)) {
-            int layoutRes = LauncherPrefs.DOCK_SEARCH_PIXEL_STYLE.get(context)
-                    ? R.layout.qsb_container_hotseat_pixel
-                    : R.layout.qsb_container_hotseat;
-            mQsb = LayoutInflater.from(context).inflate(layoutRes, this, false);
+        // TODO: Disable touch events on QSB otherwise it can crash.
+        if (mActivityContext.getDeviceProfile().isHotseatQsbEnabled()) {
+            mQsb = LauncherComponentProvider.get(context).getQsbWidgetFactory().createView(this);
         } else {
             mQsb = null;
         }

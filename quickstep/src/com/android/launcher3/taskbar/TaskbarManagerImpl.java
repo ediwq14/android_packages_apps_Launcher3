@@ -597,7 +597,7 @@ public class TaskbarManagerImpl {
             if (activity == null) return;
             int newValue = resolveTaskbarEnabled(newRawValue,
                     activity.getDeviceProfile().getDeviceProperties().isLargeScreen());
-            if (activity.isTaskbarEnabled() != newValue) {
+            if (activity.isTaskbarEnabled() != (newValue != 0)) {
                 resource.debugMsg("Taskbar enable setting changed! Restarting process!");
                 System.exit(0);
             }

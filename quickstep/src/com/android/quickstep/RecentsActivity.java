@@ -93,6 +93,7 @@ import com.android.launcher3.util.Themes;
 import com.android.launcher3.util.WindowBlurState;
 import com.android.launcher3.views.BaseDragLayer;
 import com.android.launcher3.views.ScrimView;
+import com.android.quickstep.views.MemInfoView;
 import com.android.quickstep.fallback.FallbackActivityRecentsView;
 import com.android.quickstep.fallback.FallbackRecentsStateController;
 import com.android.quickstep.fallback.RecentsDragLayer;
@@ -134,6 +135,7 @@ public final class RecentsActivity extends StatefulActivity<RecentsState> implem
     private ScrimView mScrimView;
     private FallbackActivityRecentsView mFallbackRecentsView;
     private OverviewActionsView<?> mActionsView;
+    private MemInfoView mMemInfoView;
     private SysUIConnectionTracker mSysUIConnectionTracker;
     private @Nullable volatile TaskbarInteractor mTaskbarInteractor;
     private MemInfoView mMemInfoView;
@@ -175,6 +177,7 @@ public final class RecentsActivity extends StatefulActivity<RecentsState> implem
         recentsViewStub.setLayoutResource(R.layout.fallback_activity_recents_view);
         mFallbackRecentsView = (FallbackActivityRecentsView) recentsViewStub.inflate();
         mActionsView = rootView.findViewById(R.id.overview_actions_view);
+        mMemInfoView = rootView.findViewById(R.id.meminfo);
         ViewGroup emptyRecentsMessageView = rootView.findViewById(R.id.empty_recents_message_view);
         mMemInfoView = rootView.findViewById(R.id.meminfo);
 

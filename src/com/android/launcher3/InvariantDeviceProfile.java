@@ -17,6 +17,7 @@
 package com.android.launcher3;
 
 import static com.android.launcher3.LauncherPrefs.ALLAPPS_ICON_CUSTOMIZATION;
+import static com.android.launcher3.LauncherPrefs.ALLAPPS_THEMED_ICONS;
 import static com.android.launcher3.LauncherPrefs.DB_FILE;
 import static com.android.launcher3.LauncherPrefs.DRAWER_OPEN_KEYBOARD;
 import static com.android.launcher3.LauncherPrefs.ENABLE_TWOLINE_ALLAPPS_TOGGLE;
@@ -28,6 +29,9 @@ import static com.android.launcher3.LauncherPrefs.NON_FIXED_LANDSCAPE_GRID_NAME;
 import static com.android.launcher3.LauncherPrefs.ROW_HEIGHT;
 import static com.android.launcher3.LauncherPrefs.SHOW_DESKTOP_LABELS;
 import static com.android.launcher3.LauncherPrefs.SHOW_DRAWER_LABELS;
+import static com.android.launcher3.LauncherPrefs.DOCK_SEARCH;
+import static com.android.launcher3.LauncherPrefs.HOTSEAT_QSB_HEIGHT;
+import static com.android.launcher3.LauncherPrefs.SHOW_HOTSEAT_QSB;
 import static com.android.launcher3.LauncherPrefs.WORKSPACE_ITEMS_LABEL_HIDDEN;
 import static com.android.launcher3.Utilities.dpiFromPx;
 import static com.android.launcher3.deviceprofile.parser.DeviceTypedMap.COUNT_SIZES;
@@ -307,6 +311,7 @@ public class InvariantDeviceProfile {
                     && com.android.systemui.shared.Flags.workspaceItemsLabelHidden()) {
                 onConfigChanged();
             } else if (ALLAPPS_ICON_CUSTOMIZATION.getSharedPrefKey().equals(key) ||
+                    ALLAPPS_THEMED_ICONS.getSharedPrefKey().equals(key) ||
                     DRAWER_OPEN_KEYBOARD.getSharedPrefKey().equals(key) ||
                     SHOW_DESKTOP_LABELS.getSharedPrefKey().equals(key) ||
                     SHOW_DRAWER_LABELS.getSharedPrefKey().equals(key) ||
@@ -314,13 +319,18 @@ public class InvariantDeviceProfile {
                     FONT_SIZE.getSharedPrefKey().equals(key) ||
                     ENABLE_TWOLINE_ALLAPPS_TOGGLE.getSharedPrefKey().equals(key) ||
                     ROW_HEIGHT.getSharedPrefKey().equals(key) ||
-                    IconDatabase.KEY_ICON_PACK.equals(key)) {
+                    IconDatabase.KEY_ICON_PACK.equals(key) ||
+                    DOCK_SEARCH.getSharedPrefKey().equals(key) ||
+                    HOTSEAT_QSB_HEIGHT.getSharedPrefKey().equals(key) ||
+                    SHOW_HOTSEAT_QSB.getSharedPrefKey().equals(key)) {
                 onConfigChanged();
             }
         };
-        prefs.addListener(prefListener, FIXED_LANDSCAPE_MODE, ENABLE_TWOLINE_ALLAPPS_TOGGLE);
+        prefs.addListener(prefListener, FIXED_LANDSCAPE_MODE, ENABLE_TWOLINE_ALLAPPS_TOGGLE,
+                SHOW_HOTSEAT_QSB, DOCK_SEARCH, HOTSEAT_QSB_HEIGHT);
         lifeCycle.addCloseable(() -> prefs.removeListener(prefListener,
-                FIXED_LANDSCAPE_MODE, ENABLE_TWOLINE_ALLAPPS_TOGGLE));
+                FIXED_LANDSCAPE_MODE, ENABLE_TWOLINE_ALLAPPS_TOGGLE, SHOW_HOTSEAT_QSB,
+                DOCK_SEARCH, HOTSEAT_QSB_HEIGHT));
 
         SimpleBroadcastReceiver localeReceiver = new SimpleBroadcastReceiver(context,
                 mMainExecutor, i -> onConfigChanged());

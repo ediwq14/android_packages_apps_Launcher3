@@ -136,6 +136,7 @@ public class SettingsCache extends ContentObserver {
      * the default-taking overloads of {@link #getIntValue} / {@link #getIntListenableRef}.
      */
     private final Map<Uri, Integer> mUriDefaultValues = new ConcurrentHashMap<>();
+    private final Map<Uri, Integer> mIntKeyCache = new ConcurrentHashMap<>();
     private final Set<Uri> mUrisEnabledByDefault;
     protected final ContentResolver mResolver;
     private final Executor mLightweightBackgroundExecutor;
@@ -223,6 +224,26 @@ public class SettingsCache extends ContentObserver {
     }
 
     /**
+     * Returns the int value for this classes key from the cache. If not in cache, will call
+     * {@link #updateIntValue(Uri, int)} to fetch.
+     */
+    public int getIntValue(Uri keySetting) {
+        return getIntValue(keySetting, 1);
+    }
+
+    /**
+     * Returns the int value for this classes key from the cache. If not in cache, will call
+     * {@link #updateIntValue(Uri, int)} to fetch.
+     */
+    public int getIntValue(Uri keySetting, int defaultValue) {
+        if (mIntKeyCache.containsKey(keySetting)) {
+            return mIntKeyCache.get(keySetting);
+        } else {
+            return updateIntValue(keySetting, defaultValue);
+        }
+    }
+
+    /**
      * Does not de-dupe if you add same listeners for the same key multiple times.
      * Unregister once complete using {@link #unregister(Uri, OnChangeListener)}
      *
@@ -275,6 +296,21 @@ public class SettingsCache extends ContentObserver {
             newVal = Settings.Secure.getInt(mResolver, key, defaultValue);
         }
 
+        return newVal;
+    }
+
+    private int updateIntValue(Uri keyUri, int defaultValue) {
+        String key = keyUri.getLastPathSegment();
+        int newVal;
+        if (keyUri.toString().startsWith(SYSTEM_URI_PREFIX)) {
+            newVal = Settings.System.getInt(mResolver, key, defaultValue);
+        } else if (keyUri.toString().startsWith(GLOBAL_URI_PREFIX)) {
+            newVal = Settings.Global.getInt(mResolver, key, defaultValue);
+        } else { // SETTING_SECURE
+            newVal = Settings.Secure.getInt(mResolver, key, defaultValue);
+        }
+
+        mIntKeyCache.put(keyUri, newVal);
         return newVal;
     }
 }

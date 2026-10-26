@@ -44,6 +44,7 @@ import com.android.launcher3.anim.AnimatedFloat;
 import com.android.launcher3.display.DisplayController;
 import com.android.launcher3.util.MultiValueAlpha;
 import com.android.launcher3.util.NavigationMode;
+import com.android.launcher3.util.VibratorWrapper;
 import com.android.quickstep.TaskOverlayFactory.OverlayUICallbacks;
 import com.android.quickstep.util.LayoutUtils;
 import com.android.wm.shell.shared.TypefaceUtils;
@@ -326,6 +327,10 @@ public class OverviewActionsView<T extends OverlayUICallbacks> extends FrameLayo
             screenshotButton.setOnClickListener(this);
             screenshotButton.setVisibility(mScreenshot ? VISIBLE : GONE);
         }
+        View screenshotButtonSpace = findViewById(R.id.action_screenshot_space);
+        if (screenshotButtonSpace != null) {
+            screenshotButtonSpace.setVisibility(mScreenshot ? VISIBLE : GONE);
+        }
 
         mSplitButton = findViewById(R.id.action_split);
         if (mSplitButton != null) {
@@ -337,12 +342,38 @@ public class OverviewActionsView<T extends OverlayUICallbacks> extends FrameLayo
             clearallButton.setOnClickListener(this);
             clearallButton.setVisibility(mClearAll ? VISIBLE : GONE);
         }
+        View clearallButtonSpace = findViewById(R.id.action_clear_all_space);
+        if (clearallButtonSpace != null) {
+            clearallButtonSpace.setVisibility(mClearAll ? VISIBLE : GONE);
+        }
 
         View lensButton = findViewById(R.id.action_lens);
         if (lensButton != null) {
             lensButton.setOnClickListener(this);
             lensButton.setVisibility(mLens && Utilities.isGSAEnabled(getContext()) ? VISIBLE : GONE);
         }
+        mSaveAppPairButton.setOnClickListener(this);
+        View lensButtonSpace = findViewById(R.id.action_lens_space);
+        if (lensButtonSpace != null) {
+            lensButtonSpace.setVisibility(mLens && Utilities.isGSAEnabled(getContext())
+                    ? VISIBLE : GONE);
+        }
+    }
+
+    /** Returns whether any user-configurable overview action is currently visible. */
+    public boolean hasVisibleUserActions() {
+        View screenshot = findViewById(R.id.action_screenshot);
+        View lens = findViewById(R.id.action_lens);
+        View clearAll = findViewById(R.id.action_clear_all);
+        return (screenshot != null && screenshot.getVisibility() == VISIBLE)
+                || (lens != null && lens.getVisibility() == VISIBLE)
+                || (clearAll != null && clearAll.getVisibility() == VISIBLE);
+    }
+
+    /** Returns the laid out height of the user-configurable overview actions container. */
+    public int getVisibleUserActionsHeight() {
+        return hasVisibleUserActions() ? Math.max(mActionButtons.getHeight(),
+                mActionButtons.getMeasuredHeight()) : 0;
     }
 
     /**
@@ -361,14 +392,19 @@ public class OverviewActionsView<T extends OverlayUICallbacks> extends FrameLayo
         }
         final int id = view.getId();
         if (id == R.id.action_screenshot) {
+            VibratorWrapper.INSTANCE.get(getContext()).vibrate(VibratorWrapper.EFFECT_CLICK);
             mCallbacks.onScreenshot();
         } else if (id == R.id.action_split) {
+            VibratorWrapper.INSTANCE.get(getContext()).vibrate(VibratorWrapper.EFFECT_CLICK);
             mCallbacks.onSplit();
         } else if (id == R.id.action_save_app_pair) {
+            VibratorWrapper.INSTANCE.get(getContext()).vibrate(VibratorWrapper.EFFECT_CLICK);
             mCallbacks.onSaveAppPair();
         } else if (id == R.id.action_clear_all) {
+            VibratorWrapper.INSTANCE.get(getContext()).vibrate(VibratorWrapper.EFFECT_CLICK);
             mCallbacks.onClearAllTasksRequested();
         } else if (id == R.id.action_lens) {
+            VibratorWrapper.INSTANCE.get(getContext()).vibrate(VibratorWrapper.EFFECT_CLICK);
             mCallbacks.onLens();
         }
     }
@@ -388,14 +424,28 @@ public class OverviewActionsView<T extends OverlayUICallbacks> extends FrameLayo
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences prefs, String key) {
+        boolean actionVisibilityChanged = true;
         if (LauncherPrefs.RECENTS_SCREENSHOT.getSharedPrefKey().equals(key)) {
             mScreenshot = prefs.getBoolean(key, true);
         } else if (LauncherPrefs.RECENTS_CLEAR_ALL.getSharedPrefKey().equals(key)) {
             mClearAll = prefs.getBoolean(key, true);
         } else if (LauncherPrefs.RECENTS_LENS.getSharedPrefKey().equals(key)) {
             mLens = prefs.getBoolean(key, false);
+        } else {
+            actionVisibilityChanged = false;
         }
+        if (!actionVisibilityChanged) {
+            return;
+        }
+
         updateVisibilities();
+        RecentsViewContainer container = RecentsViewContainer.containerFromContext(getContext());
+        View overviewPanel = container.getOverviewPanel();
+        if (overviewPanel instanceof RecentsView<?, ?> recentsView) {
+            recentsView.requestLayout();
+            recentsView.updateCurveProperties();
+            recentsView.invalidate();
+        }
     }
 
     public void updateHiddenFlags(@ActionsHiddenFlags int visibilityFlags, boolean enable) {
@@ -498,7 +548,9 @@ public class OverviewActionsView<T extends OverlayUICallbacks> extends FrameLayo
         }
         int desiredVisibility = mSplitButtonHiddenFlags == 0 ? VISIBLE : GONE;
         if (mSplitButton.getVisibility() != desiredVisibility) {
+            View splitButtonSpace = findViewById(R.id.action_split_space);
             mSplitButton.setVisibility(desiredVisibility);
+            splitButtonSpace.setVisibility(desiredVisibility);
             mActionButtons.requestLayout();
         }
     }

@@ -305,12 +305,14 @@ class RecentsViewStateController(private val launcher: QuickstepLauncher) :
         }
         val memInfoAlpha =
             if (state.areElementsVisible(launcherUiState, LauncherState.MEMINFO)) 1f else 0f
-        propertySetter.setFloat(
-            launcher.memInfoView,
-            MemInfoView.STATE_CTRL_ALPHA,
-            memInfoAlpha,
-            config.getInterpolator(ANIM_OVERVIEW_ACTIONS_FADE, LINEAR),
-        )
+        launcher.memInfoView?.let {
+            propertySetter.setFloat(
+                it,
+                MemInfoView.STATE_CTRL_ALPHA,
+                memInfoAlpha,
+                config.getInterpolator(ANIM_OVERVIEW_ACTIONS_FADE, LINEAR),
+            )
+        }
     }
 
     private fun getOverviewInterpolator(fromState: LauncherState, toState: LauncherState) =

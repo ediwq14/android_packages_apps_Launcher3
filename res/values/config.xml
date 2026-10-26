@@ -19,7 +19,7 @@
 
     <!-- A string pointer to the original app name string. This allows derived projects to
      easily override the app name without providing all translations -->
-    <string name="derived_app_name" translatable="false">@string/crdroid_app_name</string>
+    <string name="derived_app_name" translatable="false">@string/mistify_home</string>
 
     <!-- String representing the intent to delete a package.-->
     <string name="delete_package_intent" translatable="false">#Intent;action=android.intent.action.DELETE;launchFlags=0x10800000;end</string>
@@ -64,7 +64,7 @@
     <integer name="config_caretAnimationDuration">200</integer>
 
     <!-- Default packages -->
-    <string name="wallpaper_picker_package" translatable="false"></string>
+    <string name="wallpaper_picker_package" translatable="false">com.android.wallpaper</string>
 
     <!-- Scalable Grid configuration -->
     <!-- This is a float because it is converted to dp later in DeviceProfile -->

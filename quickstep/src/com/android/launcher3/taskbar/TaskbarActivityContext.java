@@ -1676,6 +1676,10 @@ public class TaskbarActivityContext extends BaseTaskbarContext {
     public int getDefaultTaskbarWindowSize() {
         Resources resources = getResources();
 
+        if (isGestureNav() && !mIsNavbarHintEnabled) {
+            return 0;
+        }
+
         if (isPhoneMode()) {
             return isThreeButtonNav() ?
                     resources.getDimensionPixelSize(R.dimen.taskbar_phone_size) :
@@ -2533,8 +2537,8 @@ public class TaskbarActivityContext extends BaseTaskbarContext {
         return mIsNavBarKidsMode;
     }
 
-    public int isTaskbarEnabled() {
-        return mIsTaskbarEnabled;
+    public boolean isTaskbarEnabled() {
+        return mIsTaskbarEnabled != 0;
     }
 
     public boolean isNavbarHintEnabled() {

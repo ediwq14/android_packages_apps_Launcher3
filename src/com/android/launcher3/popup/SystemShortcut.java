@@ -5,6 +5,8 @@ import static com.android.launcher3.LauncherSettings.Favorites.ITEM_TYPE_APPLICA
 import static com.android.launcher3.LauncherSettings.Favorites.ITEM_TYPE_TASK;
 import static com.android.launcher3.LauncherSettings.Favorites.CONTAINER_ALL_APPS;
 import static com.android.launcher3.LauncherSettings.Favorites.CONTAINER_ALL_APPS_PREDICTION;
+import static com.android.launcher3.LauncherSettings.Favorites.ITEM_TYPE_APPLICATION;
+import static com.android.launcher3.LauncherSettings.Favorites.ITEM_TYPE_TASK;
 import static com.android.launcher3.logging.StatsLogManager.LauncherEvent.LAUNCHER_DISMISS_PREDICTION_UNDO;
 import static com.android.launcher3.logging.StatsLogManager.LauncherEvent.LAUNCHER_PRIVATE_SPACE_INSTALL_SYSTEM_SHORTCUT_TAP;
 import static com.android.launcher3.logging.StatsLogManager.LauncherEvent.LAUNCHER_PRIVATE_SPACE_UNINSTALL_SYSTEM_SHORTCUT_TAP;
@@ -198,7 +200,9 @@ public abstract class SystemShortcut<T extends ActivityContext> extends ItemInfo
 
         @Override
         public void onClick(View view) {
-            if (LauncherPrefs.WORKSPACE_LOCK.get((Context) mTarget)) return;
+            if (!Utilities.isWorkspaceEditAllowed((Context) mTarget)) {
+                return;
+            }
             AbstractFloatingView.closeAllOpenViews(mTarget);
             Context context = view.getContext();
             Intent intent = new Intent(Intent.ACTION_PICK);
@@ -476,22 +480,12 @@ public abstract class SystemShortcut<T extends ActivityContext> extends ItemInfo
 
     public static final Factory<ActivityContext> UNINSTALL_APP =
             (activityContext, itemInfo, originalView) -> {
-                if (originalView == null) {
-                    return null;
-                }
-                if (!Flags.enablePrivateSpace()) {
-                    return null;
-                }
-                if (!UserCache.INSTANCE.get(originalView.getContext()).getUserInfo(
-                        itemInfo.user).isPrivate()) {
-                    // If app is not Private Space app.
+                if (originalView == null || itemInfo == null) {
                     return null;
                 }
                 ComponentName cn = SecondaryDropTarget.getUninstallTarget(originalView.getContext(),
                         itemInfo);
                 if (cn == null) {
-                    // If component name is null, don't show uninstall shortcut.
-                    // System apps will have component name as null.
                     return null;
                 }
                 return new UninstallApp(activityContext, itemInfo, originalView, cn);
@@ -504,7 +498,7 @@ public abstract class SystemShortcut<T extends ActivityContext> extends ItemInfo
         UninstallApp(T target, ItemInfo itemInfo, @NonNull View originalView,
                 @NonNull ComponentName cn) {
             super(R.drawable.ic_uninstall_no_shadow,
-                    R.string.uninstall_private_system_shortcut_label, target,
+                    R.string.uninstall_drop_target_label, target,
                     itemInfo, originalView);
             mComponentName = cn;
 
@@ -614,7 +608,7 @@ public abstract class SystemShortcut<T extends ActivityContext> extends ItemInfo
         return new FloatingSystemShortcut(activity, itemInfo, originalView);
     };
 
-    public static class FloatingSystemShortcut<T extends ActivityContext> extends SystemShortcut<T> { 
+    public static class FloatingSystemShortcut<T extends ActivityContext> extends SystemShortcut<T> {
         private final ComponentName mComponentName;
 
         public FloatingSystemShortcut(T target, ItemInfo itemInfo, View originalView) {

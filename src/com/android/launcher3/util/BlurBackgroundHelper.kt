@@ -38,6 +38,12 @@ constructor() {
 
     open fun folderCloseComplete() {}
 
+    open fun prepareToOpenPopup(popup: View) {}
+
+    open fun drawPopupBlur(canvas: Canvas, pathWrapper: PathWrapper?, view: View) {}
+
+    open fun popupCloseComplete() {}
+
     open fun isBlurEnabled() = false
 
     open fun isPopupBlurEnabled() = isBlurEnabled()

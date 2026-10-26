@@ -189,6 +189,7 @@ constructor(
     }
 
     private var recentsView: FallbackWindowRecentsView? = null
+    private var memInfoView: MemInfoView? = null
     private var windowlessWindowManager: WindowlessWindowManager? = null
     private var surfaceControlViewHost: SurfaceControlViewHost? = null
     private val layoutInflater: LayoutInflater = LayoutInflater.from(this).cloneInContext(this)
@@ -377,6 +378,7 @@ constructor(
             layoutInflater.inflate(R.layout.fallback_recents_activity, null) as LauncherRootView
         windowView?.let {
             actionsView = it.findViewById(R.id.overview_actions_view)
+            memInfoView = it.findViewById(R.id.meminfo)
             val emptyRecentsMessageView =
                 it.findViewById<ViewGroup?>(R.id.empty_recents_message_view)
             recentsView =
@@ -968,6 +970,8 @@ constructor(
     }
 
     override fun getActionsView() = actionsView
+
+    override fun getMemInfoView(): MemInfoView? = memInfoView
 
     override fun addForceInvisibleFlag(flag: Int) {}
 
