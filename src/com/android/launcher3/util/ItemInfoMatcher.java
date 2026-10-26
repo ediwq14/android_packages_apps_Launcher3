@@ -68,11 +68,9 @@ public abstract class ItemInfoMatcher {
     }
 
     public static int getCloneUserId(UserManager userManager) {
-        for (UserHandle userHandle : userManager.getUserProfiles()) {
-            if (userManager.getUserInfo(userHandle.getIdentifier()).isCloneProfile()) {
-                return userHandle.getIdentifier();
-            }
-        if (userManager == null) return -1;
+        if (userManager == null) {
+            return -1;
+        }
         try {
             for (UserHandle userHandle : userManager.getUserProfiles()) {
                 if (userManager.getUserInfo(userHandle.getIdentifier()).isCloneProfile()) {
@@ -81,7 +79,6 @@ public abstract class ItemInfoMatcher {
             }
         } catch (Throwable t) {
             // Permission MANAGE_USERS / QUERY_USERS might not be granted.
-        }
         }
         return -1;
     }
