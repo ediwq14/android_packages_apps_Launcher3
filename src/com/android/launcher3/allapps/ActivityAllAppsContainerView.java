@@ -44,7 +44,6 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.os.Bundle;
 import android.os.Parcelable;
-import android.os.UserManager;
 import android.os.Process;
 import android.os.UserManager;
 import android.util.AttributeSet;
@@ -230,8 +229,6 @@ public class ActivityAllAppsContainerView<T extends Context & ActivityContext>
         UserManager userManager = mActivityContext.getSystemService(UserManager.class);
         mPersonalMatcher = ItemInfoMatcher.ofCurrentOrDualUser(userManager, Process.myUserHandle());
         mAllAppsStore = mActivityContext.getActivityComponent().getAppsStore();
-        mPersonalMatcher = ItemInfoMatcher.ofCurrentOrDualUser(
-                UserCache.INSTANCE.get(mActivityContext), Process.myUserHandle());
 
         mHeaderThreshold = getResources().getDimensionPixelSize(
                 R.dimen.dynamic_grid_cell_border_spacing);

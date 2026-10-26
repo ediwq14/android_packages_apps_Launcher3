@@ -373,9 +373,7 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
     }
 
     private Interpolator getOpeningInterpolator() {
-        return com.android.internal.util.mist.MistifyFluidMotionHelper.isFluidAnimationEnabled(mLauncher)
-                ? com.android.internal.util.mist.MistifyFluidMotionHelper.getAppLaunchInterpolator()
-                : mOpeningInterpolator;
+        return mOpeningInterpolator;
     }
 
     @Override

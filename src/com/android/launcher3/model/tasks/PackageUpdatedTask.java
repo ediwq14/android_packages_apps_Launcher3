@@ -105,7 +105,6 @@ public class PackageUpdatedTask implements ModelUpdateTask {
 
         boolean needsRestart = false;
         final HashMap<String, List<LauncherActivityInfo>> activitiesLists = new HashMap<>();
-        boolean needsRestart = false;
         for (String packageName : mPackages) {
             iconCache.updateIconsForPkg(packageName, mUser);
             activitiesLists.put(packageName, appsList.updatePackage(context, packageName, mUser));
@@ -113,8 +112,6 @@ public class PackageUpdatedTask implements ModelUpdateTask {
                 needsRestart = true;
             }
         }
-
-        needsRestart = mPackages.stream().anyMatch(this::isTargetPackage);
 
         taskController.bindApplicationsIfNeeded();
 
