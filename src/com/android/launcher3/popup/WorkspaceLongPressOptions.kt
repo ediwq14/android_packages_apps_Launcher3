@@ -201,7 +201,7 @@ object WorkspaceLongPressOptions {
                 .putExtra(EXTRA_WALLPAPER_OFFSET, launcher.workspace.wallpaperOffsetForCenterPage)
                 .putExtra(EXTRA_WALLPAPER_LAUNCH_SOURCE, "app_launched_launcher")
                 .putExtra(EXTRA_WALLPAPER_FLAVOR, "focus_wallpaper")
-        val isGoogleWpInstalled = com.android.internal.util.mist.Utils.isPackageInstalled(v.context, GOOGLE_WP_PKG)
+        val isGoogleWpInstalled = Utilities.isPackageInstalled(v.context, GOOGLE_WP_PKG)
         val pickerPackage = if (isGoogleWpInstalled) GOOGLE_WP_PKG else DEFAULT_WP_PKG
         if (!TextUtils.isEmpty(pickerPackage)) {
             intent.setPackage(pickerPackage)

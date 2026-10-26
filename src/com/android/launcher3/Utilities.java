@@ -987,19 +987,6 @@ public final class Utilities {
                 R.bool.reduce_workspace_blur_usage);
     }
 
-    public static void restart() {
-        synchronized (sRestartLock) {
-            if (sRestartScheduled) {
-                return;
-            }
-            sRestartScheduled = true;
-        }
-
-        MAIN_EXECUTOR.getHandler().postDelayed(() -> {
-            System.exit(0);
-        }, WAIT_BEFORE_RESTART);
-    }
-
     public static boolean isPackageInstalled(Context context, String pkg) {
         try {
             return context.getPackageManager().getApplicationInfo(pkg, 0).enabled;

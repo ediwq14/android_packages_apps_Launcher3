@@ -153,7 +153,7 @@ class QsbLayout @JvmOverloads constructor(
 
         val alphaValue = LauncherPrefs.HOTSEAT_QSB_OUTER_OPACITY.get(context) * 255 / 100
         val cornerRadius = getOuterCornerRadius()
-        val baseColor = Themes.getAttrColor(context, R.attr.qsbOuterColorThemed)
+        val baseColor = Themes.getAttrColor(context, R.attr.qsbOuterColor)
         val outerColor = (baseColor and 0x00FFFFFF) or (alphaValue shl 24)
 
         val outerFill = PaintDrawable(outerColor)

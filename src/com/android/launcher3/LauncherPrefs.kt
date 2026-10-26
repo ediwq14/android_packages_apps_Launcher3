@@ -301,20 +301,26 @@ constructor(@ApplicationContext private val encryptedContext: Context) {
         @JvmField val APP_DRAWER_OPACITY = backedUpItem("pref_app_drawer_opacity", 90)
         @JvmField val APP_DRAWER_SORT_MODE = backedUpItem("pref_app_drawer_sorting_mode", "alphabetical")
         @JvmField val APP_DRAWER_STYLE = backedUpItem("pref_app_drawer_style", "normal")
+        @JvmField val APP_LIBRARY_ENABLED = backedUpItem("pref_app_library_enabled", false)
+        @JvmField val APP_LIBRARY_SINGLE_PAGE = backedUpItem("pref_app_library_single_page", false)
         @JvmField val AUTO_HIDE_DOTS = backedUpItem("pref_auto_hide_dots", true)
         @JvmField val BLUR_DEPTH = backedUpItem("pref_blur_depth", 30)
         @JvmField val DARK_STATUS_BAR = backedUpItem("pref_dark_status_bar", false)
         @JvmField val DOCK_MUSIC_SEARCH = backedUpItem("pref_dock_music_search", false)
+        @JvmField val QSB_STYLE_GOOGLE = backedUpItem("pref_qsb_style_google", true)
         @JvmField val DOCK_SEARCH = backedUpItem("pref_dock_search", true)
         @JvmField val DOCK_SEARCH_PIXEL_STYLE = backedUpItem("pref_dock_search_pixel_style", true)
         @JvmField val DOCK_THEME = backedUpItem("pref_dock_theme", false)
         @JvmField val DRAWER_OPEN_KEYBOARD = backedUpItem("pref_drawer_open_keyboard", false)
         @JvmField val DRAWER_SCROLLBAR = backedUpItem("pref_drawer_scrollbar", true)
+        @JvmField val DRAWER_SEARCH = backedUpItem("pref_drawer_search", true)
         @JvmField val FONT_SIZE = backedUpItem("pref_custom_font_size", 100)
         @JvmField val HOTSEAT_OPACITY = backedUpItem("pref_hotseat_opacity", 40)
         @JvmField val HOTSEAT_QSB_OPACITY = backedUpItem("pref_hotseat_qsb_opacity", 70)
+        @JvmField val HOTSEAT_QSB_GOOGLE_OPACITY = backedUpItem("pref_hotseat_qsb_google_opacity", 100)
         @JvmField val HOTSEAT_QSB_OUTER_OPACITY = backedUpItem("pref_hotseat_qsb_outer_opacity", 60)
         @JvmField val HOTSEAT_QSB_STROKE_WIDTH = backedUpItem("pref_hotseat_qsb_stroke_width", 0)
+        @JvmField val HOTSEAT_QSB_HEIGHT = backedUpItem("pref_hotseat_qsb_height", true)
         @JvmField val ICON_SIZE = backedUpItem("pref_custom_icon_size", 100)
         @JvmField val RECENTS_CLEAR_ALL = backedUpItem("pref_recents_clear_all", true)
         @JvmField val RECENTS_LENS = backedUpItem("pref_recents_lens", false)
@@ -427,6 +433,11 @@ constructor(@ApplicationContext private val encryptedContext: Context) {
         @JvmField val INITIAL_TIMESTAMP = backedUpItem("launcher.initial_timestamp", 0L)
 
         @JvmField val SELECT_TIP_SEEN = backedUpItem("launcher.select_tip_seen", false)
+
+        @JvmField val SHOW_HOTSEAT_QSB = backedUpItem("pref_show_hotseat_qsb", false)
+
+        @JvmStatic
+        fun isHotseatQsbEnabled(context: Context): Boolean = Utilities.showQSB(context)
 
         @JvmStatic
         fun <T> backedUpItem(
