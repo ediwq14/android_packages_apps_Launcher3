@@ -91,9 +91,6 @@ open class RecentsState(@JvmField val ordinal: Int, private val mFlags: Int) :
     /** For this state, whether live tile should be shown. */
     fun hasLiveTile() = hasFlag(FLAG_LIVE_TILE)
 
-    /** For this state, whether meminfoview should be shown. */
-    fun hasMemInfoView() = hasFlag(FLAG_MEMINFO)
-
     /** For this state, what color scrim should be drawn behind overview. */
     fun getScrimColor(context: Context) =
         ScrimColors(
