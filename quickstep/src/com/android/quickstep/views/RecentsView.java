@@ -3665,10 +3665,6 @@ public abstract class RecentsView<
                 .createDesk(mContainer.getDisplay().getDisplayId());
     }
 
-    public void dismissAllTasks() {
-        dismissAllTasks(null);
-    }
-
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
         if (isHandlingTouch() || event.getAction() != KeyEvent.ACTION_DOWN
