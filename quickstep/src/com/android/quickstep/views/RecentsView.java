@@ -815,8 +815,6 @@ public abstract class RecentsView<
     private OverviewActionsView mActionsView;
     private MemInfoView mMemInfoView;
 
-    private MemInfoView mMemInfoView;
-
     @Nullable
     private DesktopRecentsTransitionController mDesktopRecentsTransitionController;
 

@@ -150,9 +150,6 @@ public class DeviceProfile {
 
     // Meminfo in overview
     public int memInfoHeight;
-
-    // Meminfo in overview
-    public int memInfoHeight;
     public boolean isTaskbarPresent;
 
     /** Used only as an alternative to mocking when null values cannot be used. */

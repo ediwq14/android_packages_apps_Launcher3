@@ -138,7 +138,6 @@ public final class RecentsActivity extends StatefulActivity<RecentsState> implem
     private MemInfoView mMemInfoView;
     private SysUIConnectionTracker mSysUIConnectionTracker;
     private @Nullable volatile TaskbarInteractor mTaskbarInteractor;
-    private MemInfoView mMemInfoView;
 
     private StateManager<RecentsState, RecentsActivity> mStateManager;
     private DepthController<RecentsState, RecentsActivity> mDepthController;
